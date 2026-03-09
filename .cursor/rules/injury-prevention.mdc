@@ -1,0 +1,76 @@
+---
+description: Injury prevention monitoring and health red flags from Garmin data
+globs:
+alwaysApply: true
+---
+
+# Injury Prevention & Health Monitoring
+
+## Garmin Warning Signs
+
+Monitor these metrics for early signs of overtraining or injury risk:
+
+### Training Readiness
+
+- A single low score can be ignored (poor sleep, stress).
+- **Declining readiness across 3+ consecutive days** warrants reduced training load.
+- Readiness below 30 is a strong signal to rest or do recovery-only work.
+
+### Heart Rate
+
+- **Cardiac drift / decoupling:** Some HR rise during prolonged steady-state running is normal (cardiac drift). The key metric is _decoupling_ — the percentage divergence between pace and HR over a run. In a 60+ min steady aerobic run on flat terrain in moderate conditions, **≤5% decoupling indicates good aerobic fitness** (Friel). **>5% decoupling** in controlled conditions suggests declining aerobic fitness. Heat, humidity, and dehydration amplify drift significantly, so factor conditions before drawing conclusions. The important signal is **a trend of increasing decoupling across workouts over weeks**, not a single run.
+- **Elevated resting HR:** A resting HR 5+ bpm above the athlete's baseline for 2+ days suggests accumulated fatigue, illness, or stress.
+- **Slow HR recovery post-run:** Declining recovery speed across sessions is an early overtraining marker.
+
+### Heart Rate Variability (HRV)
+
+- Track the 7-day HRV trend, not individual readings.
+- **Declining HRV trend** over a week or more, especially combined with elevated resting HR, is a red flag.
+- A single low HRV reading after a hard session is normal.
+
+### Cadence
+
+- **Declining cadence over consecutive runs** at similar paces can signal neuromuscular fatigue.
+- A sudden drop during a run may indicate the athlete is compensating for pain or fatigue.
+
+### Body Battery / Stress
+
+- **Body battery not recovering overnight** (waking below 50 regularly) suggests insufficient recovery.
+- **Chronically elevated stress scores** affect training quality and adaptation.
+
+### Sleep
+
+- **Sleep score trends matter more than single nights.** A week of poor sleep warrants reduced intensity.
+- Check sleep duration, deep sleep, and sleep quality before prescribing hard sessions.
+
+### Training Status & Load
+
+- **"Unproductive" or "Detraining" status** from Garmin requires investigation — check if the athlete is in a planned recovery phase or genuinely losing fitness.
+- **Acute-to-chronic workload ratio** above 1.3 increases injury risk. Above 1.5 is a strong warning.
+
+## Response Protocol
+
+Based on severity, recommend one of:
+
+| Signal Severity                            | Action                                                                                     |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Mild (1–2 yellow flags)                    | Reduce intensity but maintain volume. Swap a quality session for easy running.             |
+| Moderate (3+ yellow flags or 1 red flag)   | Reduce both intensity and volume. Easy runs and rest only for 2–3 days.                    |
+| Severe (multiple red flags, pain reported) | Full rest. Do not prescribe any running. Suggest medical consultation if pain is involved. |
+
+## Red Flags — Immediate Rest
+
+Any of these should override the training plan:
+
+- Athlete reports sharp, worsening, or localised pain
+- Resting HR elevated 10+ bpm above baseline for 3+ days
+- Training readiness below 20 for 2+ consecutive days
+- Signs of illness (elevated resting HR + poor sleep + high stress + low body battery)
+
+## Complementary Training
+
+Suggest as appropriate:
+
+- **Strength work:** Glutes, hips, core, single-leg stability. 2–3 times per week during base/build.
+- **Mobility:** Hip flexors, calves, ankles. Daily or post-run.
+- **Cross-training:** Cycling or swimming on recovery days if the athlete wants to stay active without impact.

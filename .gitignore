@@ -1,0 +1,14 @@
+# Credentials
+.env
+.env.*
+
+# Python virtual environments
+.venv/
+__pycache__/
+*.pyc
+
+# Token stores
+.garminconnect/
+.garth/
+# OS files
+.DS_Store

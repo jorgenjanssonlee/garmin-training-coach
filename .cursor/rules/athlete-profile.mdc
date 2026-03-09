@@ -1,0 +1,141 @@
+---
+description: Athlete profile - personal goals, training preferences, and coaching philosophy
+globs:
+alwaysApply: true
+---
+
+# Athlete Profile
+
+This file stores your personal goals, preferences, and physical parameters. The AI coach uses it as context for every conversation.
+
+**Setup:** Ask the AI to "run the onboarding flow" and it will pull data from your Garmin account, walk you through the rest, and update this file automatically. Or fill in the sections below manually.
+
+Sections marked with `AUTO` can be populated from Garmin data. Sections marked with `YOU` need your input.
+
+## Athlete Info `AUTO`
+
+Auto-populated from `get_user_profile`. Confirm during onboarding.
+
+- **Gender:** (auto)
+- **Birthday:** (auto)
+- **Height:** (auto, cm)
+- **Weight:** (auto, kg)
+- **Measurement system:** (auto, metric/imperial)
+
+## Race Calendar `YOU`
+
+List your upcoming races. The AI uses these to determine your current training block phase automatically (base → build → peak → taper) and to periodise your training around the primary race.
+
+### Primary Race (A race)
+
+- **Race:** (e.g., Stockholm Half Marathon)
+- **Distance:** (e.g., half marathon or 21.1 km)
+- **Date:** (e.g., 2026-05-17)
+- **Goal time:** (e.g., sub-1:45)
+
+### Secondary Races (B/C races)
+
+These are training races, tune-ups, or lower-priority events. The AI will fit them into the plan without compromising primary race preparation.
+
+- (e.g., B — Parkrun 5K, 2026-04-04, use as threshold test)
+- (e.g., C — Local 10K, 2026-04-19, race effort but not tapered)
+
+> **Tip:** If you set goals in Garmin Connect, the AI can also pull them via the `get_goals` tool during onboarding.
+
+## Training Availability `AUTO` + `YOU`
+
+Available training days and preferred long run day can be auto-populated from `get_user_profile` (`availableTrainingDays`, `preferredLongTrainingDays`). Quality session days and time constraints need your input.
+
+- **Running days per week:** (auto/confirm)
+- **Available days:** (auto from Garmin, confirm)
+- **Long run day:** (auto from Garmin, confirm)
+- **Quality session days:** `YOU` (e.g., Tuesday, Thursday)
+- **Time constraints:** `YOU` (e.g., weekday runs max 60 min, weekends flexible)
+
+## Heart Rate, Pace & Power Zones `AUTO` + `YOU`
+
+All values below are auto-populated from Garmin. The AI should refresh these periodically — Garmin updates them dynamically from activity data when auto-detect is enabled.
+
+**Data retrieval priority:**
+
+1. Pull running-specific metrics from `get_user_profile` → `userData` (contains `lactateThresholdHeartRate`, `lactateThresholdSpeed`, `vo2MaxRunning`).
+2. Pull detailed threshold data from `get_lactate_threshold` (includes FTP, staleness indicator).
+3. Pull resting HR from `get_rhr_day`.
+4. If running-specific values are missing, fall back to generic profile values.
+
+> **Max HR** is set in Garmin Connect (either from Garmin's own formula or manually by the athlete). The current MCP tools may not expose it directly — if not available, ask the athlete to provide it during onboarding. Do NOT estimate max HR from recent activity data.
+
+- **Max HR:** `YOU` (from Garmin profile or manual entry, e.g., 185 bpm)
+- **Resting HR:** (auto, e.g., 38 bpm)
+- **VO2max:** (auto, e.g., 50)
+- **LTHR (Lactate Threshold HR):** (auto, e.g., 162 bpm)
+- **Lactate threshold pace:** (auto, e.g., 4:41/km)
+- **FTP (running power):** (auto, e.g., 379 W)
+- **Zone method:** (auto from Garmin config, or ask athlete: %LTHR / %MaxHR / %HRR)
+- **Use HR-based targets** `YOU` for: easy runs, threshold sessions, aerobic runs, recovery runs, long runs
+- **Use pace-based targets** `YOU`for: race pace work, long and short intervals
+- **Use power-based targets** `YOU`for: hill repeats, sprint intervals
+
+### Zones
+
+Default zone boundaries use %LTHR, matching Garmin Connect defaults. Recommended zone method in order of preference: **%LTHR → %HRR → %MaxHR**.
+
+| Zone | Name      | %LTHR    | Description                        |
+| ---- | --------- | -------- | ---------------------------------- |
+| 5    | Maximum   | 100–107% | Max effort, short intervals only   |
+| 4    | Threshold | 95–99%   | Hard, sustainable ~20–30 min       |
+| 3    | Aerobic   | 89–94%   | Comfortably hard, sustained tempo  |
+| 2    | Easy      | 80–88%   | Easy/conversational, base building |
+| 1    | Warm Up   | 65–79%   | Very easy, warm-up and cool-down   |
+
+> **Note:** When LTHR or zones feel outdated, ask the AI to refresh them from Garmin. If auto-detect is enabled on your device, these update after qualifying activities.
+
+## Recent Training Patterns `AUTO`
+
+The onboarding flow will populate this from your Garmin activity history.
+
+- **Typical weekly volume:** (auto, e.g., 5 runs, ~65 km)
+- **Typical long run distance:** (auto, e.g., 25 km)
+- **Current training status:** (auto from Garmin, e.g., Maintaining)
+- **Race predictions:** (auto from Garmin)
+
+## Training Principles & Philosophy `YOU`
+
+These reflect your preferred coaching approach. Defaults are provided — adjust to taste.
+
+- **Polarised / 80-20 model:** Roughly 80% of running volume at easy effort (Zone 1–2), 20% at moderate-to-hard (Zone 3–5). Most runs should feel genuinely easy.
+- **Progressive overload:** Increase weekly volume by no more than 10% per week. Include periodic down weeks (every 3–4 weeks).
+- **Periodisation:** The AI determines the current training block phase automatically from the race calendar (see training-plans.mdc). Trust the periodisation — don't skip phases.
+- **Recovery is training:** Rest days and easy days are non-negotiable. Fitness is built during recovery.
+
+## Interval Preferences `YOU`
+
+- **Threshold work:** (e.g., Norwegian-style 4×8 min at sub-threshold effort with 2 min recovery, or classic 3×10 min tempo)
+- **VO2max intervals:** (e.g., 5×4 min at 95% HRmax, 3 min jog recovery)
+- **Hill repeats:** (e.g., 6×2 min at Powerzone 5, 3 min recovery)
+- **Strides:** (e.g., 6–8 × 20s relaxed fast with full recovery, included in easy runs)
+- **Repetitions:** (e.g., 10×400m for 5K-specific sharpening)
+
+## Warm-Up and Cool-Down `YOU`
+
+- **Default warm-up:** (e.g., 10 minutes easy running)
+- **Default cool-down:** (e.g., 5–10 minutes easy running)
+- **Pre-workout strides:** (e.g., optional 4×20s before quality sessions)
+
+## Run Type Definitions
+
+- **Easy runs:** Zone 1–2. The foundation of all training. Should feel genuinely easy.
+- **Long runs:** Build aerobic endurance. Increase distance gradually. Keep the pace easy unless the plan calls for a progression or MP finish.
+- **Tempo/threshold runs:** Comfortably hard. Zone 3–4. Sustainable for ~60 min at tempo, ~20–30 min at threshold.
+- **Intervals:** Hard efforts with recovery. Build speed and VO2max. Zone 4–5.
+- **Recovery runs:** Very short and very easy. Purpose is blood flow, not fitness gains.
+- **Rest days:** Essential. No running. Strength or Cross training is optional.
+
+## Injury History & Limitations `YOU`
+
+- (e.g., history of plantar fasciitis — avoid sudden mileage jumps)
+- (e.g., left knee IT band — sensitive to downhill volume)
+
+## Other Notes `YOU`
+
+- (e.g., train with power meter, morning runner, prefer hill repeats/sprints for Vo2Max intervals, prefer Norwegian Singles for threshold work)

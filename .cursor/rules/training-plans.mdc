@@ -1,0 +1,90 @@
+---
+description: Training plan output format and workout creation workflow
+globs:
+alwaysApply: true
+---
+
+# Training Plans & Workout Creation
+
+## Weekly Plan Output Format
+
+Weekly plans must be presented as a table with these columns:
+
+| Column | Content |
+|---|---|
+| **Day** | Day of the week |
+| **Workout** | Activity type, duration, interval count/duration if applicable, target as HR or pace |
+| **Duration** | Total duration in minutes |
+| **Garmin Segments** | Abbreviated segment outline: type, duration, target. Use → to chain segments. |
+| **Notes** | Brief tips, explanations, or context for the session |
+
+### Example
+
+| Day | Workout | Duration | Garmin Segments | Notes |
+|---|---|---|---|---|
+| Mon | Rest | — | — | Mobility optional |
+| Tue | Threshold 58 (4×8) | 58 min | 10 WU → 4×(8:00 HR 150–155 / 2:00 easy ≤140) → 10 CD | Controlled |
+| Wed | Aerobic 60 Z2 | 60 min | 10 WU → 45 Z2 (≤140) → 5 CD | Steady aerobic |
+| Thu | MP 67 (3×12 @5:35) | 67 min | 10 WU → 3×(12:00 @ 5:35/km / 3:00 easy) → 10 CD | Pace target |
+| Fri | Rest | — | — | Full rest |
+| Sat | Easy 65 + Strides | 65 min | 10 WU → 10 Z2 → 6×(0:20 fast / 1:40 easy) → 29 Z2 → 5 CD | Relaxed-fast strides |
+| Sun | Long 160 w/20 MP | 160 min | 10 WU → 125 Z2 (≤140) → 20:00 @ 5:35/km → 5 CD | MP under fatigue |
+
+Use actual HR and pace values from the athlete's profile and zones, not generic placeholders.
+
+## Training Block Phase
+
+The AI determines the current training block phase automatically. Do not ask the athlete what phase they are in — calculate it from the data sources below.
+
+### Data sources (in priority order)
+
+1. **Garmin Connect goals** — check `get_goals` for active/future race goals.
+2. **Race Calendar in athlete-profile.mdc** — the athlete may have manually entered races there.
+3. **Athlete instructions in chat** — the athlete can override phase durations or the current phase at any time (e.g., "I want a 6-week peak phase with only 2 weeks taper"). Chat overrides take priority over defaults for the current planning cycle.
+
+If neither Garmin goals nor the athlete profile contain race data, default to general fitness building: alternate 3-week build cycles with 1-week recovery blocks. Suggest the athlete set a goal.
+
+### Default phase calculation from primary race date
+
+These are defaults — subject to chat overrides (see running-coach.mdc).
+
+| Phase | Default timing | Focus |
+|---|---|---|
+| **Taper** | Final 1–2 weeks before race | Reduce volume 40–60%, maintain intensity, sharpen |
+| **Peak** | 2–4 weeks before taper | Highest quality sessions, race-specific work, volume plateaus |
+| **Build** | 4–12 weeks before peak | Progressive volume and intensity increases, block-specific work |
+| **Base** | Before build phase | Aerobic foundation, lower intensity, build volume gradually |
+| **Recovery** | 1–2 weeks after a race | Easy running only, no structured work |
+
+### Secondary race handling
+
+- B races during build/base: use as hard training stimulus, no taper
+- B races during peak: mini-taper (2–3 easy days before), resume plan after
+- C races: no plan adjustment, treat as a workout
+
+## Weekly Plan Context
+
+Weekly plans must:
+- Align with the calculated training block phase and race calendar.
+- Account for the previous 1–2 weeks of actual training load from Garmin data — not just the plan, but what was actually executed.
+- Adjust for athlete-reported factors: injuries, fatigue, illness, travel, life stress.
+- Respect the athlete's available training days and time constraints.
+- Consider proximity to secondary races.
+
+Before generating a weekly plan, always:
+1. Check training status and training load from Garmin.
+2. Review the last 7–14 days of actual activities.
+3. Compare planned vs actual: use `get_scheduled_workouts` for the previous week(s) alongside actual activities to see what was completed, missed, or modified. Use `get_workout_by_id` if needed to compare intended structure vs actual execution.
+4. Check training readiness, sleep, and recovery metrics if available.
+5. Determine current phase from the race calendar.
+6. State the current phase and weeks-to-race when presenting the plan.
+
+## Workout Creation Workflow
+
+When creating a structured workout to push to Garmin:
+
+1. **Assess readiness** — check training readiness, recent load, and recovery status before prescribing intensity.
+2. **Design the workout** — include warm-up and cool-down in every structured workout. Use the athlete's preferred WU/CD durations from their profile.
+3. **Present for review** — show the workout structure to the athlete before uploading.
+4. **Upload** — use the workout creation tools to push to Garmin Connect.
+5. **Schedule** — offer to schedule the workout on a specific date if requested.
