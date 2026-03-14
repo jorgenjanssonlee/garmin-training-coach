@@ -86,5 +86,8 @@ When creating a structured workout to push to Garmin:
 1. **Assess readiness** — check training readiness, recent load, and recovery status before prescribing intensity.
 2. **Design the workout** — include warm-up and cool-down in every structured workout. Use the athlete's preferred WU/CD durations from their profile.
 3. **Present for review** — show the workout structure to the athlete before uploading.
-4. **Upload** — use the workout creation tools to push to Garmin Connect.
-5. **Schedule** — offer to schedule the workout on a specific date if requested.
+4. **Wait for explicit confirmation** — do not call `upload_workout`, `schedule_workout`, or `delete_workout` until the athlete has explicitly approved (e.g., "yes, upload it", "go ahead", "push to Garmin"). Never assume consent.
+5. **Upload** — use the workout creation tools to push to Garmin Connect only after confirmation.
+6. **Schedule** — offer to schedule the workout on a specific date if requested. Again, wait for explicit confirmation before calling `schedule_workout`.
+
+For detailed rules on workout structure, reuse of existing workouts, step notes, and construction patterns, see `workout-handling.mdc`.

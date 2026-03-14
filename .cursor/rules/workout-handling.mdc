@@ -1,0 +1,133 @@
+---
+description: Workout and schedule handling — confirmation, reuse, notes, and construction patterns
+globs:
+alwaysApply: true
+---
+
+# Workout & Schedule Handling
+
+## Confirmation Before Any Write
+
+**Never write to Garmin without explicit athlete approval.**
+
+Do not call `upload_workout`, `schedule_workout`, or `delete_workout` until the athlete has explicitly confirmed. Examples of valid confirmation: "yes, upload it", "go ahead", "push to Garmin", "schedule it", "delete that one".
+
+- When presenting a new workout, end with a clear question: _"Should I upload this to Garmin Connect?"_ or _"Ready to push this to Connect?"_
+- When offering to schedule, ask: _"Should I schedule this for [date]?"_
+- When proposing to delete a workout, ask: _"Confirm you want this deleted?"_
+- Never assume consent from context. If the athlete says "create a workout" but doesn't explicitly say "upload it", present the workout and wait for approval before uploading.
+
+## Reuse & Update Existing Workouts
+
+Keep the Garmin Connect workout list manageable. Avoid creating new workouts when an existing one can be updated.
+
+### When to reuse
+
+1. **Check scheduled workouts** — use `get_scheduled_workouts` for future dates. If an existing workout is _not_ scheduled for any future day, it is a candidate for reuse.
+2. **Match by type and structure** — if the new workout is a minor variation of an existing one (e.g., Easy 60 → Easy 65, or the same threshold session with slightly different duration), prefer updating that workout over creating a new one. IF updating an existing workout, also update the name and notes to reflect the changes.
+3. **Examples:**
+   - "Easy60 Aerobic Z2" from last week → update to "Easy65 Aerobic Z2" for next week. Same structure (WU → Z2 block → CD), just adjust the Z2 duration, name and notes to reflect the changes.
+   - "Threshold 58 (4×8)" → update to "Threshold 62 (4×10)" for a progressive week. Same pattern, different rep length.
+   - "Long 140 Z2" → update to "Long 160 w/20 MP" when adding an MP block. Reuse if the base structure is similar.
+
+### When to create new
+
+- The workout type or structure is fundamentally different (e.g., first time adding strides, first hill sprint session).
+- No suitable candidate exists in `get_workouts`.
+- The athlete explicitly asks for a new workout.
+
+### Workflow
+
+1. Before creating a workout, call `get_workouts` and `get_scheduled_workouts` (for a future date range).
+2. Identify workouts not scheduled for future days.
+3. If a reusable match exists, propose: _"I can update your existing 'Easy60 Aerobic Z2' to Easy65 for next week — that keeps your workout list tidy. OK?"_ Wait for confirmation, then update (which may involve delete + re-upload with the new structure, or an update if the API supports it).
+   For weekly planning, review all planned workouts in one batch and present all of them to the athlete for approval as a group before uploading.
+
+## Step-Level Notes
+
+Notes on individual steps help the athlete during the workout — they appear on the watch for quick reference. Athletes can view these on the watch to remind themselves about the current step, for example "Am I doing 50 or 60 minutes Z2 running now before the next step?". When updating an existing workout, also update the notes to reflect the changes.
+
+### When to add notes
+
+All steps should have brief notes to help the athlete during the workout.
+
+- **Warmup and Cooldown steps**: add a brief note about the duration/distance, target and intent. Example: _"10 min easy jog, HR Z1-2, Don't force HR, let it rise/recover naturally"_
+- **Work steps** (normal running, intervals, threshold blocks, hill sprints, MP sections): add a brief note about the duration/distance, target and intent. Example: _"8 min at HR 150–155, controlled"_
+- **Recovery steps**: add a brief note about the duration/distance, target and intent. Example: _"2 min easy jog, HR Z1"_
+- **Lap-button steps**: explain the purpose and brief reminder of what to do next. Example: _"Press lap when ready at the bottom of the hill. Next: 20 s relaxed fast. Full recovery before next."_
+- **Transitions**: when moving from one block to another (e.g. Z2 into MP), add a brief note about the duration/distance, target and intent: _"20 min at MP 5:35min/km."_
+
+### Note guidelines
+
+- Keep notes short — 1–2 lines. The watch screen is small.
+- Focus on **current step**
+- Use the athlete's units and targets (pace in min/km or min/mile, HR zones) consistently.
+
+## Workout Construction Patterns
+
+These patterns define how to technically build workouts for upload to Garmin. Structure steps so they display usefully on the watch and support lap-button transitions where duration/distance can't be predetermined.
+
+### Easy aerobic (e.g., Easy 60 Z2)
+
+| Step | Type      | Definition              | Notes                     |
+| ---- | --------- | ----------------------- | ------------------------- |
+| 1    | Warm-up   | Duration (e.g., 10 min) | Target: Z1–Z2, HR or open |
+| 2    | Run       | Duration (e.g., 45 min) | Target: Z2, HR ≤ upper Z2 |
+| 3    | Cool-down | Duration (e.g., 5 min)  | Target: Z1, easy          |
+
+No lap-button steps needed.
+
+### Threshold intervals (e.g., 4×8 min at threshold)
+
+| Step | Type         | Definition                 | Notes                                                  |
+| ---- | ------------ | -------------------------- | ------------------------------------------------------ |
+| 1    | Warm-up      | Duration                   | Z2, build gradually                                    |
+| 2    | Repeat block | N reps × (work + recovery) | Work: duration, HR target. Recovery: duration, easy HR |
+| 3    | Cool-down    | Duration                   | Z1                                                     |
+
+### Long run with MP section (e.g., Long 160 w/20 MP)
+
+| Step | Type      | Definition          | Notes                                                                       |
+| ---- | --------- | ------------------- | --------------------------------------------------------------------------- |
+| 1    | Warm-up   | Duration            | Z2                                                                          |
+| 2    | Run       | Duration (Z2 block) | HR ≤ upper Z2. Note: _"Steady Z2. MP block in 125 min."_                    |
+| 3    | Run       | Duration (MP block) | Pace target (e.g., 5:35/km). Note: _"Marathon pace, 20 min. Hold 5:35/km."_ |
+| 4    | Cool-down | Duration            | Z1                                                                          |
+
+### Strides (e.g., Easy 65 + Strides)
+
+| Step | Type         | Definition                   | Notes                                                     |
+| ---- | ------------ | ---------------------------- | --------------------------------------------------------- |
+| 1    | Warm-up      | Duration                     | Z2                                                        |
+| 2    | Run          | Duration (Z2 before strides) | Z2                                                        |
+| 3    | Repeat block | N reps × (stride + recovery) | Stride: 20–30 s, open or pace. Recovery: ~1:30–2:00, easy |
+| 4    | Run          | Duration (Z2 after strides)  | Z2                                                        |
+| 5    | Cool-down    | Duration                     | Z1                                                        |
+
+Stride step note: _"20 s relaxed fast. Full recovery before next."_ Recovery note: _"Jog easy. Next stride in 1:40."_
+
+### Hill sprints (lap-button for positioning)
+
+| Step | Type                    | Definition                   | Notes                                                                                                                           |
+| ---- | ----------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | Warm-up                 | Duration                     | Z2, include some hill running if possible                                                                                       |
+| 2    | Run / Open (lap button) | End on lap button press      | Note: _"Jog to bottom of hill. Press lap when in position."_                                                                    |
+| 3    | Repeat block            | N reps × (sprint + recovery) | Sprint: duration or open + power/pace. Recovery: duration or open. Note: _"Run hard up hill. Press lap at top."_ for open steps |
+| 4    | Cool-down               | Duration                     | Z1                                                                                                                              |
+
+Use **lap-button (open) steps** when:
+
+- The athlete needs to get in position (e.g., walk/jog to the hill).
+- The exact duration or distance of a transition can't be predefined.
+- A step ends when the athlete presses lap (e.g., at the top of the hill, at a turnaround point).
+
+### Lap-button (open) steps — when and how
+
+Add an **open** or **lap-button** step when:
+
+- Bridging two segments where the transition has no fixed duration (e.g., "jog to the start of the next interval", "get in position at the bottom of the hill").
+- The athlete controls when to advance (e.g., press lap at top of hill, at a cone, at a landmark).
+
+Structure: define the step as **open** (no duration/distance target), with a note explaining the purpose. Example note: _"Press lap when ready at bottom of hill for next sprint."_
+
+Check the Garmin MCP workout upload schema for the exact step type name (e.g., `open`, `manual`, `lap_button`). Use whatever the API supports for "advance on lap button press".

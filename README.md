@@ -49,6 +49,7 @@ garmin-training-coach/
 │       ├── running-coach.mdc     # Core coaching persona and analysis methodology
 │       ├── athlete-profile.mdc   # Your goals, zones, preferences (edit this one)
 │       ├── training-plans.mdc    # Plan output format and workout workflow
+│       ├── workout-handling.mdc  # Workout upload/schedule rules, reuse, notes, construction
 │       └── injury-prevention.mdc # Health monitoring and red flags
 ├── .gitignore
 ├── README.md                     # Overview and installation
