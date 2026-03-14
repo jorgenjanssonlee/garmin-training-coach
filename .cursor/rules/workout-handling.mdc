@@ -69,11 +69,11 @@ These patterns define how to technically build workouts for upload to Garmin. St
 
 ### Easy aerobic (e.g., Easy 60 Z2)
 
-| Step | Type      | Definition              | Notes                     |
-| ---- | --------- | ----------------------- | ------------------------- |
-| 1    | Warm-up   | Duration (e.g., 10 min) | Target: Z1–Z2, HR or open |
-| 2    | Run       | Duration (e.g., 45 min) | Target: Z2, HR ≤ upper Z2 |
-| 3    | Cool-down | Duration (e.g., 5 min)  | Target: Z1, easy          |
+| Step | Type      | Definition              | Notes             |
+| ---- | --------- | ----------------------- | ----------------- |
+| 1    | Warm-up   | Duration (e.g., 10 min) | Z1–Z2, HR or open |
+| 2    | Run       | Duration (e.g., 45 min) | Z2, HR ≤ upper Z2 |
+| 3    | Cool-down | Duration (e.g., 5 min)  | Z1, easy          |
 
 No lap-button steps needed.
 
