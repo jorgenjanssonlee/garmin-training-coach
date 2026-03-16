@@ -40,7 +40,7 @@ These are training races, tune-ups, or lower-priority events. The AI will fit th
 - (e.g., B — Parkrun 5K, 2026-04-04, use as threshold test)
 - (e.g., C — Local 10K, 2026-04-19, race effort but not tapered)
 
-> **Tip:** If you set goals in Garmin Connect, the AI can also pull them via the `get_goals` tool during onboarding.
+> **Tip:** Goals and races are separate in Garmin Connect. The Garmin MCP has no tool for planned races — `get_goals` returns only goals (e.g. distance targets), not race events. This Race Calendar is the primary source the AI uses for periodisation. Keep it updated when you add or change races.
 
 ## Training Availability `AUTO` + `YOU`
 

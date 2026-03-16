@@ -38,11 +38,11 @@ The AI determines the current training block phase automatically. Do not ask the
 
 ### Data sources (in priority order)
 
-1. **Garmin Connect goals** — check `get_goals` for active/future race goals.
-2. **Race Calendar in athlete-profile.mdc** — the athlete may have manually entered races there.
+1. **Race Calendar in athlete-profile.mdc** — the primary source for planned races. In Garmin Connect, goals (e.g. "run 1750 km in 2026") and races (e.g. planned marathon events) are separate concepts in different sections of the UI. The Garmin MCP has no tool for planned races; `get_goals` returns only goals (distance targets, etc.), not race events. The athlete must enter races in this file.
+2. **Garmin Connect goals** — call `get_goals(goal_type="active")` and `get_goals(goal_type="future")` for goals in progress (e.g. yearly distance targets). Use these to inform context, but do not treat them as race calendar data.
 3. **Athlete instructions in chat** — the athlete can override phase durations or the current phase at any time (e.g., "I want a 6-week peak phase with only 2 weeks taper"). Chat overrides take priority over defaults for the current planning cycle.
 
-If neither Garmin goals nor the athlete profile contain race data, default to general fitness building: alternate 3-week build cycles with 1-week recovery blocks. Suggest the athlete set a goal.
+If the athlete profile has no race calendar data, default to general fitness building: alternate 3-week build cycles with 1-week recovery blocks. Suggest the athlete add their races to athlete-profile.mdc.
 
 ### Default phase calculation from primary race date
 
