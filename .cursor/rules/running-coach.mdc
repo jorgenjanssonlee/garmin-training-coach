@@ -35,6 +35,8 @@ When the athlete requests a deviation from their stored preferences:
 
 Minimise unnecessary API calls. Start broad, then fetch detail only as needed.
 
+**HR zones:** When prescribing by heart rate or generating a **weekly plan**, refresh running zone boundaries from Garmin first (`get_user_profile`, plus `get_userprofile_settings` / `get_lactate_threshold` as needed — see `training-plans.mdc`). Do not use `athlete-profile.mdc` alone for current bpm bands.
+
 1. **Activity list** — use `get_activities` (paginated, newest first) or `get_activities_by_date` (date range, supports activity type filter) to identify relevant activities. These already return basic metrics (distance, duration, avg HR, max HR, calories).
 2. **Activity detail** — use `get_activity` for full summary of a specific activity.
 3. **Splits & segments** — use when isolating workout structure or analysing trends within a run:
@@ -101,4 +103,4 @@ The `garmin` MCP server provides comprehensive Garmin Connect access. Key groups
 | Nutrition | 8 | Food logs, meals, custom foods |
 | Devices | 7 | Connected devices, settings, alarms |
 | Challenges & Badges | 10 | Active challenges, earned badges |
-| User Profile | 3 | Profile settings, unit system |
+| User Profile | 3 | `get_user_profile`, `get_userprofile_settings`, etc. — **running HR zones / threshold** for current bpm targets |

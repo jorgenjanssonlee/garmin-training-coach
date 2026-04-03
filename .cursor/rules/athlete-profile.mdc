@@ -8,7 +8,7 @@ alwaysApply: true
 
 This file stores your personal goals, preferences, and physical parameters. The AI coach uses it as context for every conversation.
 
-**Setup:** Ask the AI to "run the onboarding flow" and it will pull data from your Garmin account, walk you through the rest, and update this file automatically. Or fill in the sections below manually.
+**Setup:** Ask the AI to "run the onboarding flow" and it will pull data from your Garmin account, walk you through the rest (including **confirming your time zone**), and update this file automatically. Or fill in the sections below manually.
 
 Sections marked with `AUTO` can be populated from Garmin data. Sections marked with `YOU` need your input.
 
@@ -21,6 +21,15 @@ Auto-populated from `get_user_profile`. Confirm during onboarding.
 - **Height:** (auto, cm)
 - **Weight:** (auto, kg)
 - **Measurement system:** (auto, metric/imperial)
+
+## Time zone `AUTO` + `YOU`
+
+Garmin Connect uses an account **time zone** for calendars, scheduling, and how some dates are interpreted. It may differ from where you actually train or your watch’s “home” location.
+
+- **Default time zone (IANA):** (auto from `get_userprofile_settings` → `timeZone`, e.g. `Australia/Sydney`, `Europe/Stockholm`)
+- **Confirmed for coaching:** `YOU` — During **onboarding**, the AI must **show the auto value** and ask you to **confirm or correct** it. If Connect is wrong, update Connect **or** store the canonical zone here for chat (scheduling, “today”, weekly plan context). Always use a valid **IANA** name (e.g. `America/New_York`), not a numeric offset alone.
+
+> **Tip:** This value helps reason about `schedule_workout` calendar dates vs the day you see in Connect (see `workout-handling.mdc`).
 
 ## Race Calendar `YOU`
 
@@ -56,12 +65,15 @@ Available training days and preferred long run day can be auto-populated from `g
 
 All values below are auto-populated from Garmin. The AI should refresh these periodically — Garmin updates them dynamically from activity data when auto-detect is enabled.
 
+**Live zones vs this file:** Zone **bpm ranges** follow what is configured in **Garmin Connect** and on the **watch**; they can **change week to week** (manual edits, sync, auto-detect threshold updates, or zone-method changes). For **weekly plans and HR-targeted workouts**, the coach must **re-fetch** zone definitions from Garmin for that session (`get_user_profile`, `get_userprofile_settings`, `get_lactate_threshold` as in `training-plans.mdc`). Treat the **Zones** table below as **reference / last-known snapshot**, not the source of truth until refreshed.
+
 **Data retrieval priority:**
 
-1. Pull running-specific metrics from `get_user_profile` → `userData` (contains `lactateThresholdHeartRate`, `lactateThresholdSpeed`, `vo2MaxRunning`).
+1. Pull running-specific metrics from `get_user_profile` → `userData` (contains `lactateThresholdHeartRate`, `lactateThresholdSpeed`, `vo2MaxRunning`; parse any **HR zone** fields returned in the same payload).
 2. Pull detailed threshold data from `get_lactate_threshold` (includes FTP, staleness indicator).
 3. Pull resting HR from `get_rhr_day`.
-4. If running-specific values are missing, fall back to generic profile values.
+4. Use `get_userprofile_settings` when zone or HR settings are surfaced there and not complete in `get_user_profile`.
+5. If running-specific values are missing, fall back to generic profile values.
 
 > **Max HR** is set in Garmin Connect (either from Garmin's own formula or manually by the athlete). The current MCP tools may not expose it directly — if not available, ask the athlete to provide it during onboarding. Do NOT estimate max HR from recent activity data.
 
@@ -88,7 +100,7 @@ Default zone boundaries use %LTHR, matching Garmin Connect defaults. Recommended
 | 2    | Easy      | 80–88%   | Easy/conversational, base building |
 | 1    | Warm Up   | 65–79%   | Very easy, warm-up and cool-down   |
 
-> **Note:** When LTHR or zones feel outdated, ask the AI to refresh them from Garmin. If auto-detect is enabled on your device, these update after qualifying activities.
+> **Note:** When LTHR or zones feel outdated, ask the AI to refresh them from Garmin. If auto-detect is enabled on your device, these update after qualifying activities. Even when this file is up to date, the coach still pulls **current** Connect zones again before each **weekly plan** so prescriptions match the watch.
 
 ## Recent Training Patterns `AUTO`
 

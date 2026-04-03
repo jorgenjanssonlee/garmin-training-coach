@@ -175,7 +175,7 @@ To force re-auth when tokens expire: `uvx --python 3.12 --from git+https://githu
 ## Next Steps
 
 Installation complete. See **[USAGE.md](USAGE.md)** for:
-- Setting up your athlete profile (onboarding flow)
+- Setting up your athlete profile (onboarding flow, including time zone confirmation)
 - Example prompts and how to talk to the coach
 - Customizing the coaching rules
 

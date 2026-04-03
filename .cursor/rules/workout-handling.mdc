@@ -43,25 +43,38 @@ Keep the Garmin Connect workout list manageable. Avoid creating new workouts whe
 3. If a reusable match exists, propose: _"I can update your existing 'Easy60 Aerobic Z2' to Easy65 for next week — that keeps your workout list tidy. OK?"_ Wait for confirmation, then update (which may involve delete + re-upload with the new structure, or an update if the API supports it).
    For weekly planning, review all planned workouts in one batch and present all of them to the athlete for approval as a group before uploading.
 
-## Step-Level Notes
+## Workout-level description vs step notes
 
-Notes on individual steps help the athlete during the workout — they appear on the watch for quick reference. Athletes can view these on the watch to remind themselves about the current step, for example "Am I doing 50 or 60 minutes Z2 running now before the next step?". When updating an existing workout, also update the notes to reflect the changes.
+Garmin workout JSON has a top-level **`description`** (library / Connect overview) and per-step **`description`** (shown on the watch during the workout). **All workout types:** keep both **high level** — no methodology dumps.
 
-### When to add notes
+### Workout-level `description` (library)
 
-All steps should have brief notes to help the athlete during the workout.
+- **Purpose:** Short overview only — session label, total duration, segment pattern. Athlete skims this in the workout list.
+- **Include:** e.g. _"60 min easy aerobic: 10 WU, 45 Z2, 5 CD."_
+- **Omit:** LTHR or max-HR values, %LTHR / zone-method explanation, “from Connect”, exact custom bpm ranges, or anything that duplicates what is already encoded in step targets. Put **derivation and numbers** in chat or weekly-plan text if the athlete needs them — not in this field.
 
-- **Warmup and Cooldown steps**: add a brief note about the duration/distance, target and intent. Example: _"10 min easy jog, HR Z1-2, Don't force HR, let it rise/recover naturally"_
-- **Work steps** (normal running, intervals, threshold blocks, hill sprints, MP sections): add a brief note about the duration/distance, target and intent. Example: _"8 min at HR 150–155, controlled"_
-- **Recovery steps**: add a brief note about the duration/distance, target and intent. Example: _"2 min easy jog, HR Z1"_
-- **Lap-button steps**: explain the purpose and brief reminder of what to do next. Example: _"Press lap when ready at the bottom of the hill. Next: 20 s relaxed fast. Full recovery before next."_
-- **Transitions**: when moving from one block to another (e.g. Z2 into MP), add a brief note about the duration/distance, target and intent: _"20 min at MP 5:35min/km."_
+### Step-level `description` (watch)
+
+Notes help during the run; the watch screen is small. When updating a workout, refresh step notes if structure or targets change.
+
+- **Align with the step target** (effort matches what Garmin shows) but **do not** repeat long derivations (e.g. skip _"Z1 floor–Z2 ceiling @ %LTHR, LTHR 162 from Connect"_ when the step already has a custom HR or zone target).
+- Prefer **short zone or pace cues**: _"10 min easy, Z1–2"_, _"45 min steady Z2"_, _"5 min easy finish"_ — add bpm or pace **only when** they help on the watch for that step (e.g. a specific rep target).
+
+### When to add step notes
+
+All steps should have brief notes.
+
+- **Warm-up / cool-down:** duration + easy intent. Example: _"10 min easy, Z1–2. Let HR rise naturally."_
+- **Work steps:** duration + effort. Example: _"8 min threshold, controlled."_ or _"45 min steady Z2."_
+- **Recovery:** Example: _"2 min easy jog."_
+- **Lap-button steps:** purpose + what’s next. Example: _"Lap at hill bottom. Next: 20 s fast."_
+- **Transitions:** Example: _"20 min @ MP 5:35/km."_
 
 ### Note guidelines
 
-- Keep notes short — 1–2 lines. The watch screen is small.
-- Focus on **current step**
-- Use the athlete's units and targets (pace in min/km or min/mile, HR zones) consistently.
+- **One line** when possible; two only if necessary.
+- Focus on the **current** step.
+- Use the athlete’s usual units (min/km, zones, bpm) consistently; avoid redundant detail already shown by the step target in Connect.
 
 ## `schedule_workout` and calendar dates
 
@@ -75,59 +88,69 @@ The `calendar_date` (YYYY-MM-DD) passed to `schedule_workout` may not match the 
 
 ### Optional
 
-Ask the athlete’s **IANA timezone** (e.g. `Australia/Sydney`, `Europe/Stockholm`) when scheduling matters for a specific week; use it only to reason about likely off-by-one issues, not as a fixed rule without verification.
+Use the **IANA time zone** in `athlete-profile.mdc` (confirmed at onboarding) when scheduling matters for a specific week; use it only to reason about likely off-by-one issues, not as a fixed rule without verification. If the profile field is empty, ask once and save it to the profile.
 
 ## Workout Construction Patterns
 
 These patterns define how to technically build workouts for upload to Garmin. Structure steps so they display usefully on the watch and support lap-button transitions where duration/distance can't be predetermined.
 
+### Step targets (required)
+
+- **Every step must have an explicit target** — heart rate (single zone or custom range), pace, power, or pace zone. Do not leave warm-up, cool-down, work, or recovery steps as **no target** unless there is no alternative for that step type (rare).
+- **Garmin Connect — custom heart rate:** When a single named zone does not match the intent (typical for **warm-up** and **cool-down** on easy runs), use **Target → Heart Rate → Custom** (wording may vary slightly by app version). Set **lower HR** to the **bottom of Z1** and **upper HR** to the **top of Z2** using **this week’s bpm from a fresh `get_user_profile` (and related) pull**, not stale values from `athlete-profile.mdc` or prior chat — Connect/watch zone config can change. Adjust only if the plan calls for a narrower band (e.g. cool-down Z1-only).
+- **MCP `upload_workout` JSON (matches Garmin Connect / `python-garminconnect`):**
+  - **Single named zone:** `targetType` → `heart.rate.zone` (`workoutTargetTypeId` 4) and **`zoneNumber`** 1–5. Omit `targetValueOne` / `targetValueTwo`.
+  - **Custom bpm band (same as Connect “custom heart rate”):** still `heart.rate.zone`, but set **`targetValueOne`** = low bpm and **`targetValueTwo`** = high bpm (numbers preferred; Connect sometimes shows strings). Omit **`zoneNumber`**. This is what the Connect web app sends (e.g. 120–142).
+  - **`python-garminconnect`:** `upload_workout()` posts your dict as-is — no stripping of HR fields.
+  - **`garmin_mcp`:** Before upload it runs `_fix_hr_zone_steps`: if `zoneNumber` is missing and `targetValueOne` is an integer **1–5**, it assumes a mistaken “zone as targetValue” and converts to `zoneNumber`; **typical bpm values (e.g. 105–143) are left unchanged.** The bundled tool text that says never use `targetValueOne`/`targetValueTwo` for HR is **overbroad** — it targets the 1–5 mistake, not custom bpm.
+
 ### Easy aerobic (e.g., Easy 60 Z2)
 
-| Step | Type      | Definition              | Notes             |
-| ---- | --------- | ----------------------- | ----------------- |
-| 1    | Warm-up   | Duration (e.g., 10 min) | Z1–Z2, HR or open |
-| 2    | Run       | Duration (e.g., 45 min) | Z2, HR ≤ upper Z2 |
-| 3    | Cool-down | Duration (e.g., 5 min)  | Z1, easy          |
+| Step | Type      | Definition              | Target (Garmin)                                       |
+| ---- | --------- | ----------------------- | ----------------------------------------------------- |
+| 1    | Warm-up   | Duration (e.g., 10 min) | **Custom HR:** low = Z1 floor, high = Z2 ceiling      |
+| 2    | Run       | Duration (e.g., 45 min) | **HR Z2** (or custom HR capped at upper Z2 if needed) |
+| 3    | Cool-down | Duration (e.g., 5 min)  | **Custom HR:** low = Z1 floor, high = Z2 ceiling      |
 
 No lap-button steps needed.
 
 ### Threshold intervals (e.g., 4×8 min at threshold)
 
-| Step | Type         | Definition                 | Notes                                                  |
-| ---- | ------------ | -------------------------- | ------------------------------------------------------ |
-| 1    | Warm-up      | Duration                   | Z2, build gradually                                    |
-| 2    | Repeat block | N reps × (work + recovery) | Work: duration, HR target. Recovery: duration, easy HR |
-| 3    | Cool-down    | Duration                   | Z1                                                     |
+| Step | Type         | Definition                 | Target (Garmin)                                                                                                            |
+| ---- | ------------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 1    | Warm-up      | Duration                   | **Custom HR** Z1 floor–Z2 ceiling (building easy) **or** **HR Z2** if a single zone is enough                              |
+| 2    | Repeat block | N reps × (work + recovery) | Work: duration + **HR/pace target** (e.g. threshold zone). Recovery: duration + **custom HR** Z1–Z2 or **Z1** as specified |
+| 3    | Cool-down    | Duration                   | **Custom HR** Z1 floor–Z2 ceiling (easy finish), or narrower Z1-only if prescribed                                         |
 
 ### Long run with MP section (e.g., Long 160 w/20 MP)
 
-| Step | Type      | Definition          | Notes                                                                       |
-| ---- | --------- | ------------------- | --------------------------------------------------------------------------- |
-| 1    | Warm-up   | Duration            | Z2                                                                          |
-| 2    | Run       | Duration (Z2 block) | HR ≤ upper Z2. Note: _"Steady Z2. MP block in 125 min."_                    |
-| 3    | Run       | Duration (MP block) | Pace target (e.g., 5:35/km). Note: _"Marathon pace, 20 min. Hold 5:35/km."_ |
-| 4    | Cool-down | Duration            | Z1                                                                          |
+| Step | Type      | Definition          | Target (Garmin)                                                                                       |
+| ---- | --------- | ------------------- | ----------------------------------------------------------------------------------------------------- |
+| 1    | Warm-up   | Duration            | **Custom HR** Z1 floor–Z2 ceiling **or** **HR Z2**                                                    |
+| 2    | Run       | Duration (Z2 block) | **HR Z2** (or custom capped at upper Z2). Note: _"Steady Z2. MP block in 125 min."_                   |
+| 3    | Run       | Duration (MP block) | **Pace** (or pace zone) per plan (e.g. marathon pace). Note: _"Marathon pace, 20 min. Hold 5:35/km."_ |
+| 4    | Cool-down | Duration            | **Custom HR** Z1 floor–Z2 ceiling (or Z1-only if prescribed)                                          |
 
 ### Strides (e.g., Easy 65 + Strides)
 
-| Step | Type         | Definition                   | Notes                                                     |
-| ---- | ------------ | ---------------------------- | --------------------------------------------------------- |
-| 1    | Warm-up      | Duration                     | Z2                                                        |
-| 2    | Run          | Duration (Z2 before strides) | Z2                                                        |
-| 3    | Repeat block | N reps × (stride + recovery) | Stride: 20–30 s, open or pace. Recovery: ~1:30–2:00, easy |
-| 4    | Run          | Duration (Z2 after strides)  | Z2                                                        |
-| 5    | Cool-down    | Duration                     | Z1                                                        |
+| Step | Type         | Definition                   | Target (Garmin)                                                              |
+| ---- | ------------ | ---------------------------- | ---------------------------------------------------------------------------- |
+| 1    | Warm-up      | Duration                     | **Custom HR** Z1–Z2 **or** **HR Z2**                                         |
+| 2    | Run          | Duration (Z2 before strides) | **HR Z2** (or custom Z1–Z2)                                                  |
+| 3    | Repeat block | N reps × (stride + recovery) | Stride: **pace / open / RPE** per plan. Recovery: **custom HR** easy (Z1–Z2) |
+| 4    | Run          | Duration (Z2 after strides)  | **HR Z2** (or custom Z1–Z2)                                                  |
+| 5    | Cool-down    | Duration                     | **Custom HR** Z1–Z2 (or Z1-only)                                             |
 
 Stride step note: _"20 s relaxed fast. Full recovery before next."_ Recovery note: _"Jog easy. Next stride in 1:40."_
 
 ### Hill sprints (lap-button for positioning)
 
-| Step | Type                    | Definition                   | Notes                                                                                                                           |
-| ---- | ----------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | Warm-up                 | Duration                     | Z2, include some hill running if possible                                                                                       |
-| 2    | Run / Open (lap button) | End on lap button press      | Note: _"Jog to bottom of hill. Press lap when in position."_                                                                    |
-| 3    | Repeat block            | N reps × (sprint + recovery) | Sprint: duration or open + power/pace. Recovery: duration or open. Note: _"Run hard up hill. Press lap at top."_ for open steps |
-| 4    | Cool-down               | Duration                     | Z1                                                                                                                              |
+| Step | Type                    | Definition                   | Target (Garmin)                                                                                                                       |
+| ---- | ----------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | Warm-up                 | Duration                     | **Custom HR** Z1–Z2 **or** **HR Z2**; include some hill running if possible                                                           |
+| 2    | Run / Open (lap button) | End on lap button press      | Prefer **custom HR** Z1–Z2 for any timed jog; if the editor forces no HR target on open steps, use step note for intended easy effort |
+| 3    | Repeat block            | N reps × (sprint + recovery) | Sprint: **power/pace** or open + note. Recovery: **custom HR** easy **or** open with note                                             |
+| 4    | Cool-down               | Duration                     | **Custom HR** Z1–Z2 (or Z1-only)                                                                                                      |
 
 Use **lap-button (open) steps** when:
 
@@ -142,6 +165,6 @@ Add an **open** or **lap-button** step when:
 - Bridging two segments where the transition has no fixed duration (e.g., "jog to the start of the next interval", "get in position at the bottom of the hill").
 - The athlete controls when to advance (e.g., press lap at top of hill, at a cone, at a landmark).
 
-Structure: define the step as **open** (no duration/distance target), with a note explaining the purpose. Example note: _"Press lap when ready at bottom of hill for next sprint."_
+Structure: define the step as **open** (no duration/distance target), with a note explaining the purpose. Example note: _"Press lap when ready at bottom of hill for next sprint."_ If Connect allows, still attach an **effort target** (e.g. custom HR Z1–Z2) to open steps; if not, the note must state the intended effort so the step is not untargeted in practice.
 
 Check the Garmin MCP workout upload schema for the exact step type name (e.g., `open`, `manual`, `lap_button`). Use whatever the API supports for "advance on lap button press".

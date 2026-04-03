@@ -21,7 +21,7 @@ Since the coach calls Garmin tools frequently, it's easiest to click **Allowlist
 
 Before using the coach, set up your athlete profile. The easiest way is to let the AI do it for you. Open a new Agent chat in Cursor and paste this prompt:
 
-> "Run the onboarding flow: read my current athlete-profile.mdc, pull what you can from my Garmin data (resting HR, max HR, VO2max, recent training patterns, typical weekly structure), and walk me through filling in the rest — goals, race targets, preferred interval style, training availability, injury history. Update the file when we're done."
+> "Run the onboarding flow: read my current athlete-profile.mdc, pull what you can from my Garmin data (resting HR, max HR, VO2max, recent training patterns, typical weekly structure, **time zone from `get_userprofile_settings`**), confirm or correct the time zone with me, and walk me through filling in the rest — goals, race targets, preferred interval style, training availability, injury history. Update the file when we're done."
 
 The AI will fetch your Garmin data, ask you questions about things it can't determine automatically, and write everything to `athlete-profile.mdc`. You can re-run this any time your goals or circumstances change.
 

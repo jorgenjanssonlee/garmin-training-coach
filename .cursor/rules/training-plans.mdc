@@ -15,7 +15,7 @@ Weekly plans must be presented as a table with these columns:
 | **Day** | Day of the week |
 | **Workout** | Activity type, duration, interval count/duration if applicable, target as HR or pace |
 | **Duration** | Total duration in minutes |
-| **Garmin Segments** | Abbreviated segment outline: type, duration, target. Use → to chain segments. |
+| **Garmin Segments** | Abbreviated segment outline: type, duration, **target on every segment** (no untargeted WU/CD). Use → to chain segments. Easy warm-up/cool-down: **custom HR** in Connect (low = Z1 floor, high = Z2 ceiling); shorthand e.g. `WU HR Z1–2`, `CD HR Z1–2` with athlete bpm when known. |
 | **Notes** | Brief tips, explanations, or context for the session |
 
 ### Example
@@ -23,14 +23,14 @@ Weekly plans must be presented as a table with these columns:
 | Day | Workout | Duration | Garmin Segments | Notes |
 |---|---|---|---|---|
 | Mon | Rest | — | — | Mobility optional |
-| Tue | Threshold 58 (4×8) | 58 min | 10 WU → 4×(8:00 HR 150–155 / 2:00 easy ≤140) → 10 CD | Controlled |
-| Wed | Aerobic 60 Z2 | 60 min | 10 WU → 45 Z2 (≤140) → 5 CD | Steady aerobic |
-| Thu | MP 67 (3×12 @5:35) | 67 min | 10 WU → 3×(12:00 @ 5:35/km / 3:00 easy) → 10 CD | Pace target |
+| Tue | Threshold 58 (4×8) | 58 min | 10 WU HR Z1–2 → 4×(8:00 HR 150–155 / 2:00 HR ≤140) → 10 CD HR Z1–2 | Controlled |
+| Wed | Aerobic 60 Z2 | 60 min | 10 WU HR Z1–2 → 45 Z2 (≤140) → 5 CD HR Z1–2 | Steady aerobic |
+| Thu | MP 67 (3×12 @5:35) | 67 min | 10 WU HR Z1–2 → 3×(12:00 @ 5:35/km / 3:00 HR Z1–2) → 10 CD HR Z1–2 | Pace target |
 | Fri | Rest | — | — | Full rest |
-| Sat | Easy 65 + Strides | 65 min | 10 WU → 10 Z2 → 6×(0:20 fast / 1:40 easy) → 29 Z2 → 5 CD | Relaxed-fast strides |
-| Sun | Long 160 w/20 MP | 160 min | 10 WU → 125 Z2 (≤140) → 20:00 @ 5:35/km → 5 CD | MP under fatigue |
+| Sat | Easy 65 + Strides | 65 min | 10 WU HR Z1–2 → 10 Z2 → 6×(0:20 fast / 1:40 HR Z1–2) → 29 Z2 → 5 CD HR Z1–2 | Relaxed-fast strides |
+| Sun | Long 160 w/20 MP | 160 min | 10 WU HR Z1–2 → 125 Z2 (≤140) → 20:00 @ 5:35/km → 5 CD HR Z1–2 | MP under fatigue |
 
-Use actual HR and pace values from the athlete's profile and zones, not generic placeholders.
+Use actual HR and pace values **from the current Garmin Connect pull for this planning cycle** (see below), not generic placeholders. Values copied into `athlete-profile.mdc` can be **stale** if zones or threshold shifted in Connect or on the watch.
 
 ## Training Block Phase
 
@@ -62,6 +62,20 @@ These are defaults — subject to chat overrides (see running-coach.mdc).
 - B races during peak: mini-taper (2–3 easy days before), resume plan after
 - C races: no plan adjustment, treat as a workout
 
+## Heart rate zones — always refresh from Garmin
+
+**HR zone boundaries (bpm per Z1–Z5) can change** when the athlete edits zones in **Garmin Connect**, when the **watch** syncs new settings, when **auto-detect** updates lactate threshold, or when the **zone method** (%LTHR / %Max HR / %HRR) changes. Do **not** assume the zone table in `athlete-profile.mdc` matches this week’s device/Connect config.
+
+**Before generating a weekly plan or any workout prescription keyed to HR**, pull **current** definitions from Garmin:
+
+1. **`get_user_profile`** — parse the response for running/HR zone fields (often under `userData` or related objects; exact shape depends on the API). Use whatever **per-zone low/high bpm** or **threshold + method** the payload exposes.
+2. **`get_userprofile_settings`** — use if zone or HR-related settings appear there and are not fully covered by `get_user_profile`.
+3. **`get_lactate_threshold`** — for **current LTHR** (and staleness) when zones are derived from threshold.
+
+If the tools return only threshold and method but not explicit Z1–Z5 bpm, derive boundaries **using the same method Garmin displays** (from the response metadata if present); if still ambiguous, state the assumption or ask the athlete to confirm **what Connect shows today** for running zones — do not silently reuse last week’s numbers from chat memory or from `.mdc` alone.
+
+When presenting the plan, it helps to state briefly that targets use **Connect zones as of this pull** (or quote the Z1–Z2 band in bpm used for custom WU/CD).
+
 ## Weekly Plan Context
 
 Weekly plans must:
@@ -72,19 +86,20 @@ Weekly plans must:
 - Consider proximity to secondary races.
 
 Before generating a weekly plan, always:
-1. Check training status and training load from Garmin.
-2. Review the last 7–14 days of actual activities.
-3. Compare planned vs actual: use `get_scheduled_workouts` for the previous week(s) alongside actual activities to see what was completed, missed, or modified. Use `get_workout_by_id` if needed to compare intended structure vs actual execution.
-4. Check training readiness, sleep, and recovery metrics if available.
-5. Determine current phase from the race calendar.
-6. State the current phase and weeks-to-race when presenting the plan.
+1. **Refresh running HR zone definitions** — `get_user_profile` (and `get_userprofile_settings` / `get_lactate_threshold` as needed); see **Heart rate zones — always refresh from Garmin** above.
+2. Check training status and training load from Garmin.
+3. Review the last 7–14 days of actual activities.
+4. Compare planned vs actual: use `get_scheduled_workouts` for the previous week(s) alongside actual activities to see what was completed, missed, or modified. Use `get_workout_by_id` if needed to compare intended structure vs actual execution.
+5. Check training readiness, sleep, and recovery metrics if available.
+6. Determine current phase from the race calendar.
+7. State the current phase and weeks-to-race when presenting the plan.
 
 ## Workout Creation Workflow
 
 When creating a structured workout to push to Garmin:
 
 1. **Assess readiness** — check training readiness, recent load, and recovery status before prescribing intensity.
-2. **Design the workout** — include warm-up and cool-down in every structured workout. Use the athlete's preferred WU/CD durations from their profile.
+2. **Design the workout** — include warm-up and cool-down in every structured workout. Use the athlete's preferred WU/CD durations from their profile. **Every step has a target** (see `workout-handling.mdc`); easy WU/CD default to **custom HR** Z1 floor–Z2 ceiling in Garmin Connect when a single zone is not enough. **Use bpm from the same fresh Garmin zone pull** used for the weekly plan (`get_user_profile` / related), not cached profile file values alone. **Workout `description` and step notes:** keep them **short and high level** in the JSON (structure + intent only); put LTHR, %LTHR, and “from Connect” explanations in chat or the plan table — not in Connect text fields (see `workout-handling.mdc`).
 3. **Present for review** — show the workout structure to the athlete before uploading.
 4. **Wait for explicit confirmation** — do not call `upload_workout`, `schedule_workout`, or `delete_workout` until the athlete has explicitly approved (e.g., "yes, upload it", "go ahead", "push to Garmin"). Never assume consent.
 5. **Upload** — use the workout creation tools to push to Garmin Connect only after confirmation.
