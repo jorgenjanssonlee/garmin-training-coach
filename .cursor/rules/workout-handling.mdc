@@ -63,6 +63,20 @@ All steps should have brief notes to help the athlete during the workout.
 - Focus on **current step**
 - Use the athlete's units and targets (pace in min/km or min/mile, HR zones) consistently.
 
+## `schedule_workout` and calendar dates
+
+The `calendar_date` (YYYY-MM-DD) passed to `schedule_workout` may not match the **local calendar day** the athlete sees in Garmin Connect, depending on how Garmin maps that date to the user’s **account timezone** vs **UTC**.
+
+### Guidance
+
+- Treat scheduled dates as **best-effort** until confirmed in Connect.
+- If the athlete reports workouts landing **one calendar day early or late**, adjust `calendar_date` by **±1 day** and reschedule; direction depends on their situation (ahead vs behind UTC, DST), so **do not hard-code** a single offset for all users.
+- After changing dates, Connect may show **duplicate** entries (old + new). Tell the athlete to remove the obsolete ones in **Training Calendar** if needed.
+
+### Optional
+
+Ask the athlete’s **IANA timezone** (e.g. `Australia/Sydney`, `Europe/Stockholm`) when scheduling matters for a specific week; use it only to reason about likely off-by-one issues, not as a fixed rule without verification.
+
 ## Workout Construction Patterns
 
 These patterns define how to technically build workouts for upload to Garmin. Structure steps so they display usefully on the watch and support lap-button transitions where duration/distance can't be predetermined.
