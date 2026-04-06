@@ -103,6 +103,30 @@ These patterns define how to technically build workouts for upload to Garmin. St
   - **Custom bpm band (same as Connect “custom heart rate”):** still `heart.rate.zone`, but set **`targetValueOne`** = low bpm and **`targetValueTwo`** = high bpm (numbers preferred; Connect sometimes shows strings). Omit **`zoneNumber`**. This is what the Connect web app sends (e.g. 120–142).
   - **`python-garminconnect`:** `upload_workout()` posts your dict as-is — no stripping of HR fields.
   - **`garmin_mcp`:** Before upload it runs `_fix_hr_zone_steps`: if `zoneNumber` is missing and `targetValueOne` is an integer **1–5**, it assumes a mistaken “zone as targetValue” and converts to `zoneNumber`; **typical bpm values (e.g. 105–143) are left unchanged.** The bundled tool text that says never use `targetValueOne`/`targetValueTwo` for HR is **overbroad** — it targets the 1–5 mistake, not custom bpm.
+- **Custom pace target (e.g. marathon pace in min/km):**
+  - `targetType` → **`pace.zone`** (`workoutTargetTypeId` **6**).
+  - **`targetValueOne`** = the **faster** end of the pace band, in **metres per second** (m/s).
+  - **`targetValueTwo`** = the **slower** end of the pace band, in **m/s**.
+  - **`targetValueUnit`** = `null` (omit or set to null).
+  - Omit **`zoneNumber`** when using a custom pace range (zoneNumber is only for named pace zones).
+  - **Conversion formula:** `speed_mps = 1000 / total_seconds_per_km`. For 5:30/km → `1000 / 330 ≈ 3.0303 m/s`. For 5:40/km → `1000 / 340 ≈ 2.9412 m/s`.
+  - **Use a ±5 sec/km band** around the target pace. For 5:35/km target: `targetValueOne` ≈ 3.0303 (5:30), `targetValueTwo` ≈ 2.9412 (5:40).
+  - **NEVER** use `no.target` with speed values in km/h — that produces a broken step with no visible pace target on the watch. **NEVER** use `speed.zone` (`workoutTargetTypeId` 5) — that is a different target type. Always use **`pace.zone`** (id **6**) with **m/s** values.
+  - **Example JSON** for a 10 min MP step at ~5:35/km:
+    ```json
+    {
+      "type": "ExecutableStepDTO",
+      "stepType": { "stepTypeId": 3, "stepTypeKey": "interval" },
+      "endCondition": { "conditionTypeId": 2, "conditionTypeKey": "time" },
+      "endConditionValue": 600,
+      "targetType": {
+        "workoutTargetTypeId": 6,
+        "workoutTargetTypeKey": "pace.zone"
+      },
+      "targetValueOne": 3.0303030545454543,
+      "targetValueTwo": 2.9411764941176646
+    }
+    ```
 
 ### Easy aerobic (e.g., Easy 60 Z2)
 
@@ -133,15 +157,17 @@ No lap-button steps needed.
 
 ### Strides (e.g., Easy 65 + Strides)
 
-| Step | Type         | Definition                   | Target (Garmin)                                                              |
-| ---- | ------------ | ---------------------------- | ---------------------------------------------------------------------------- |
-| 1    | Warm-up      | Duration                     | **Custom HR** Z1–Z2 **or** **HR Z2**                                         |
-| 2    | Run          | Duration (Z2 before strides) | **HR Z2** (or custom Z1–Z2)                                                  |
-| 3    | Repeat block | N reps × (stride + recovery) | Stride: **pace / open / RPE** per plan. Recovery: **custom HR** easy (Z1–Z2) |
-| 4    | Run          | Duration (Z2 after strides)  | **HR Z2** (or custom Z1–Z2)                                                  |
-| 5    | Cool-down    | Duration                     | **Custom HR** Z1–Z2 (or Z1-only)                                             |
+| Step | Type         | Definition                   | Target (Garmin)                                                                                            |
+| ---- | ------------ | ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 1    | Warm-up      | Duration                     | **Custom HR** Z1–Z2 **or** **HR Z2**                                                                       |
+| 2    | Run          | Duration (Z2 before strides) | **HR Z2** (or custom Z1–Z2)                                                                                |
+| 3    | Repeat block | N reps × (stride + recovery) | Stride: **no target** (`no.target`) — fast but relaxed, by feel only. Recovery: **custom HR** easy (Z1–Z2) |
+| 4    | Run          | Duration (Z2 after strides)  | **HR Z2** (or custom Z1–Z2)                                                                                |
+| 5    | Cool-down    | Duration                     | **Custom HR** Z1–Z2 (or Z1-only)                                                                           |
 
 Stride step note: _"20 s relaxed fast. Full recovery before next."_ Recovery note: _"Jog easy. Next stride in 1:40."_
+
+**Strides are never pace- or speed-targeted.** Do not set a `pace.zone`, `speed.zone`, or HR target on stride steps. Use `no.target` and let the step description convey the intent ("relaxed fast", "smooth acceleration"). The athlete controls effort by feel.
 
 ### Hill sprints (lap-button for positioning)
 
