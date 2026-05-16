@@ -11,11 +11,20 @@ Always use **Agent mode** (not Ask mode) when talking to the coach. Agent mode a
 The first time the AI calls a Garmin tool, Cursor will show an approval prompt asking you to confirm. This is a security feature — it prevents the AI from making unauthorized external calls.
 
 You have three options:
+
 - **Run** — approve this single call. You'll see the prompt again next time this tool is used.
 - **Allowlist MCP Tool** — permanently approve this specific tool. Recommended for tools the coach uses frequently (activity data, health metrics, etc.).
 - **Skip** — decline the call.
 
 Since the coach calls Garmin tools frequently, it's easiest to click **Allowlist MCP Tool** each time a new tool comes up. After a few sessions most tools will be allowlisted and you won't see the prompt anymore.
+
+## Refresh MCP or re-authenticate
+
+Upstream **[Taxuspt/garmin_mcp](https://github.com/Taxuspt/garmin_mcp)** updates often (new tools, auth changes). **`uv` caches** the Git install used by Cursor — refresh it from a terminal, then **toggle the `garmin` MCP off and on** in **Cursor > Settings > Cursor Settings > Tools & MCP** (or **Developer: Reload Window**) so Cursor runs the new build.
+
+If **`uvx --python 3.12 --from git+https://github.com/Taxuspt/garmin_mcp garmin-mcp-auth --verify`** fails after an upstream auth change, run **`--force-reauth`** with the same **`uvx --from git+…`** pattern, then **`--verify`** again. Do **not** use **`uv run garmin-mcp-auth`** from this repo alone—it expects a local `garmin_mcp` Python project.
+
+See **README → [Garmin MCP: upstream updates & authentication](README.md)** (same heading in the repo root README) for full commands and troubleshooting.
 
 ## Getting Started — Athlete Profile Setup
 
@@ -71,13 +80,13 @@ The AI will apply the change immediately and ask whether you want to update your
 
 The coaching instructions are split across four Cursor Rules files (`.mdc`) in `.cursor/rules/`. The `.cursor` directory is hidden in macOS Finder but fully visible inside Cursor's file explorer -- browse to it there to edit the files.
 
-| File                    | Purpose                                                         | Edit?                 |
-| ----------------------- | --------------------------------------------------------------- | --------------------- |
-| `running-coach.mdc`     | Core coaching persona, analysis methodology, tool reference     | Rarely                |
-| `athlete-profile.mdc`   | **Your goals, zones, training preferences, injury history**     | **Yes -- start here** |
-| `training-plans.mdc`    | Weekly plan output format, workout creation workflow             | Optional              |
-| `workout-handling.mdc`  | Workout upload confirmation, reuse, step notes, construction     | Optional              |
-| `injury-prevention.mdc` | Health monitoring thresholds, red flags, response protocol    | Optional              |
+| File                    | Purpose                                                      | Edit?                 |
+| ----------------------- | ------------------------------------------------------------ | --------------------- |
+| `running-coach.mdc`     | Core coaching persona, analysis methodology, tool reference  | Rarely                |
+| `athlete-profile.mdc`   | **Your goals, zones, training preferences, injury history**  | **Yes -- start here** |
+| `training-plans.mdc`    | Weekly plan output format, workout creation workflow         | Optional              |
+| `workout-handling.mdc`  | Workout upload confirmation, reuse, step notes, construction | Optional              |
+| `injury-prevention.mdc` | Health monitoring thresholds, red flags, response protocol   | Optional              |
 
 **To personalise the coach, edit `athlete-profile.mdc`** (or run the onboarding flow above, or ask the chat to update them for you). Key sections:
 
