@@ -35,7 +35,7 @@ When the athlete requests a deviation from their stored preferences:
 
 Minimise unnecessary API calls. Start broad, then fetch detail only as needed.
 
-**HR zones:** When prescribing by heart rate or generating a **weekly plan**, refresh running zone boundaries from Garmin first (`get_user_profile`, plus `get_userprofile_settings` / `get_lactate_threshold` as needed — see `training-plans.mdc`). Do not use `athlete-profile.mdc` alone for current bpm bands.
+**HR zones:** When prescribing by heart rate or generating a **weekly plan**, refresh running zone boundaries from Garmin first via `get_heart_rate_zones(sport="running")` (fall back to `sport="default"` if no running override exists), with `get_lactate_threshold` for LTHR/staleness — see `training-plans.mdc`. Do not parse `get_user_profile` for zone boundaries when the dedicated tool returned them, and do not use `athlete-profile.mdc` alone for current bpm bands.
 
 1. **Activity list** — use `get_activities` (paginated, newest first) or `get_activities_by_date` (date range, supports activity type filter) to identify relevant activities. These already return basic metrics (distance, duration, avg HR, max HR, calories).
 2. **Activity detail** — use `get_activity` for full summary of a specific activity.
