@@ -38,11 +38,33 @@ The AI determines the current training block phase automatically. Do not ask the
 
 ### Data sources (in priority order)
 
-1. **Race Calendar in athlete-profile.mdc** — the primary source for planned races. In Garmin Connect, goals (e.g. "run 1750 km in 2026") and races (e.g. planned marathon events) are separate concepts in different sections of the UI. The Garmin MCP has no tool for planned races; `get_goals` returns only goals (distance targets, etc.), not race events. The athlete must enter races in this file.
-2. **Garmin Connect goals** — call `get_goals(goal_type="active")` and `get_goals(goal_type="future")` for goals in progress (e.g. yearly distance targets). Use these to inform context, but do not treat them as race calendar data.
-3. **Athlete instructions in chat** — the athlete can override phase durations or the current phase at any time (e.g., "I want a 6-week peak phase with only 2 weeks taper"). Chat overrides take priority over defaults for the current planning cycle.
+1. **Garmin Connect calendar events** — call `get_calendar_events(start_date, end_date)` with a wide forward window (e.g. today → today + 12 months) to pull planned races and events the athlete added or subscribed to in Connect. This is the **only** tool that returns Connect calendar races; `get_scheduled_workouts` returns only workouts and `get_goals` returns only goals. Each event includes:
+   - `is_race` (true → treat as a race, not a general event) and `primary_event` (true → the goal race for the athlete's active training plan; treat as the **A race** by default).
+   - `distance_meters` when the organiser stored one (use to infer race distance / category).
+   - `start_time_local` and `time_zone` (use for taper timing on race day).
+   - **Not returned:** the athlete's **goal / target finish time**, even when set in Connect. The upstream tool exposes distance targets but silently drops time targets. Always sourced from `athlete-profile.mdc` or by asking the athlete.
+2. **Race Calendar in `athlete-profile.mdc`** — override and fallback layer. Use it when:
+   - A race is not in Garmin Connect (e.g. local event without a Connect listing).
+   - The athlete wants to override the Connect data: reclassify A/B/C priority, set a different goal time, add notes, or demote `primary_event` for coaching purposes.
+   - If a race appears in **both** sources, the athlete profile takes precedence for **priority (A/B/C), goal time, and notes**; the Connect entry supplies date, distance, and start time unless the profile overrides those too.
+3. **Garmin Connect goals** — call `get_goals(goal_type="active")` and `get_goals(goal_type="future")` for goals in progress (e.g. yearly distance targets, cumulative-distance goals). These are **not** race events — use them for context (e.g. seasonal volume ambitions), not to drive periodisation.
+4. **Athlete instructions in chat** — the athlete can override phase durations or the current phase at any time (e.g., "I want a 6-week peak phase with only 2 weeks taper"). Chat overrides take priority over defaults for the current planning cycle.
 
-If the athlete profile has no race calendar data, default to general fitness building: alternate 3-week build cycles with 1-week recovery blocks. Suggest the athlete add their races to athlete-profile.mdc.
+If neither Connect calendar events nor the athlete profile contain race data, default to general fitness building: alternate 3-week build cycles with 1-week recovery blocks. Suggest the athlete add a race in Garmin Connect (preferred) or in `athlete-profile.mdc`.
+
+### Enriching `athlete-profile.mdc` from Connect
+
+Don't ask the athlete to fill in a race calendar from scratch when Connect already has the race. When a race exists in `get_calendar_events` but is missing or thin in the athlete profile, **offer to enrich the profile with Connect data + ask only for the gaps**.
+
+1. **Auto-fill from Connect:** race name (`title`), date, distance (`distance_meters` → km/mi in the athlete's units), start time (`start_time_local`), location, and default priority (**A** if `primary_event: true`, otherwise leave unset).
+2. **Ask the athlete only for what Connect doesn't provide:**
+   - **Goal / target finish time** — always missing from `get_calendar_events` (see data-source note above).
+   - **Priority (A/B/C)** — confirm the auto-assigned A, or reclassify (e.g. Connect's `primary_event` is really a tune-up).
+   - **Notes / context** — optional (course profile, race strategy, weather concerns).
+3. **Present the merged draft for approval** before writing to `athlete-profile.mdc`. Use the same explicit-consent pattern as workout uploads: show the block, ask _"Add this to your Race Calendar?"_, wait for confirmation.
+4. **Re-run periodically** — when the athlete adds a new race in Connect, or when the profile's most recent race has passed, offer enrichment again rather than assuming the profile is authoritative.
+
+If Connect and the profile disagree on a race that's already in both, follow the precedence rule in the data-sources section (profile wins on priority/goal time/notes, Connect wins on date/distance/start time unless overridden). Only offer to update the profile if the athlete explicitly asks or the discrepancy is material to the current plan.
 
 ### Default phase calculation from primary race date
 
@@ -64,17 +86,21 @@ These are defaults — subject to chat overrides (see running-coach.mdc).
 
 ## Heart rate zones — always refresh from Garmin
 
-**HR zone boundaries (bpm per Z1–Z5) can change** when the athlete edits zones in **Garmin Connect**, when the **watch** syncs new settings, when **auto-detect** updates lactate threshold, or when the **zone method** (%LTHR / %Max HR / %HRR) changes. Do **not** assume the zone table in `athlete-profile.mdc` matches this week’s device/Connect config.
+**HR zone boundaries (bpm per Z1–Z5) can change** when the athlete edits zones in **Garmin Connect**, when the **watch** syncs new settings, when **auto-detect** updates lactate threshold, or when the **zone method** (%LTHR / %Max HR / %HRR) changes. Do **not** assume the zone table in `athlete-profile.mdc` matches this week's device/Connect config.
 
 **Before generating a weekly plan or any workout prescription keyed to HR**, pull **current** definitions from Garmin:
 
-1. **`get_user_profile`** — parse the response for running/HR zone fields (often under `userData` or related objects; exact shape depends on the API). Use whatever **per-zone low/high bpm** or **threshold + method** the payload exposes.
-2. **`get_userprofile_settings`** — use if zone or HR-related settings appear there and are not fully covered by `get_user_profile`.
-3. **`get_lactate_threshold`** — for **current LTHR** (and staleness) when zones are derived from threshold.
+1. **`get_heart_rate_zones(sport="running")`** — primary source. Purpose-built tool that returns the running-specific zone profile with explicit per-zone bpm floors, calculation method (%LTHR / %Max HR / %HRR / custom_bpm), and the max HR / LTHR / resting HR the boundaries were derived from. If the athlete has no running-specific override, Garmin returns "No configured heart-rate zones found for sport RUNNING" — fall back to `get_heart_rate_zones(sport="default")` (a.k.a. "generic") for the account-wide profile.
+2. **`get_lactate_threshold`** — call when the zone method is LTHR-derived, or when you need the **staleness** indicator (last-updated timestamp) to judge whether Garmin's auto-detect has produced a recent value.
+3. **`get_user_profile`** / **`get_userprofile_settings`** — fallback only, used when #1 doesn't cover a specific field (e.g. VO2max, gender, birth date, unit system). Do not parse these for zone boundaries when `get_heart_rate_zones` returned a usable profile.
 
-If the tools return only threshold and method but not explicit Z1–Z5 bpm, derive boundaries **using the same method Garmin displays** (from the response metadata if present); if still ambiguous, state the assumption or ask the athlete to confirm **what Connect shows today** for running zones — do not silently reuse last week’s numbers from chat memory or from `.mdc` alone.
+**Max HR handling.** `get_heart_rate_zones` returns Max HR in the `max_hr` field (also visible on `get_user_profile` in most cases). If both come back null/blank — rare, usually means the athlete has never set it in Connect — ask the athlete to provide it during onboarding. **Do not estimate Max HR from recent activity data** (peak HR observations, 220-age, etc.); zones derived from an estimate silently mis-prescribe every HR-targeted session.
+
+If `get_heart_rate_zones` returns only threshold + method rather than explicit Z1–Z5 floors (rare — the payload normally includes both), derive boundaries **using the same method Garmin reports** in the response; if still ambiguous, state the assumption or ask the athlete to confirm **what Connect shows today** for running zones — do not silently reuse last week's numbers from chat memory or from `.mdc` alone.
 
 When presenting the plan, it helps to state briefly that targets use **Connect zones as of this pull** (or quote the Z1–Z2 band in bpm used for custom WU/CD).
+
+**Writing zones back to Garmin (`set_heart_rate_zones`).** The upstream MCP also exposes a **write** tool that mutates the athlete's Garmin Connect zone configuration for one sport. Treat it with the same consent gate as workout uploads: never call `set_heart_rate_zones` without explicit athlete approval (e.g. _"yes, update my running zones in Garmin"_). Prefer suggesting the athlete edit zones in Connect themselves; only offer the write path when the athlete has explicitly asked the coach to re-set zones (e.g. after a threshold test result they want reflected on the watch).
 
 ## Weekly Plan Context
 
@@ -86,7 +112,7 @@ Weekly plans must:
 - Consider proximity to secondary races.
 
 Before generating a weekly plan, always:
-1. **Refresh running HR zone definitions** — `get_user_profile` (and `get_userprofile_settings` / `get_lactate_threshold` as needed); see **Heart rate zones — always refresh from Garmin** above.
+1. **Refresh running HR zone definitions** — `get_heart_rate_zones(sport="running")` (with `sport="default"` fallback) plus `get_lactate_threshold` for staleness; see **Heart rate zones — always refresh from Garmin** above.
 2. Check training status and training load from Garmin.
 3. Review the last 7–14 days of actual activities.
 4. Compare planned vs actual: use `get_scheduled_workouts` for the previous week(s) alongside actual activities to see what was completed, missed, or modified. Use `get_workout_by_id` if needed to compare intended structure vs actual execution.
