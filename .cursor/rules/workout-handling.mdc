@@ -90,14 +90,52 @@ The `calendar_date` (YYYY-MM-DD) passed to `schedule_workout` may not match the 
 
 Use the **IANA time zone** in `athlete-profile.mdc` (confirmed at onboarding) when scheduling matters for a specific week; use it only to reason about likely off-by-one issues, not as a fixed rule without verification. If the profile field is empty, ask once and save it to the profile.
 
+## Prefer high-level builders where they fit
+
+Upstream `workout_builders.py` ships MCP tools that build correct Garmin JSON internally and upload in one call. Use them where they cover the intended structure; fall back to hand-built `upload_workout` for anything they don't.
+
+### Coverage
+
+| Builder tool | Use for | Notes |
+|---|---|---|
+| `create_strength_workout(name, exercises=[...])` | **All** strength sessions | Real value: `sets > 1` is emitted as a `RepeatGroupDTO` iterated N times (work + rest per set) so Garmin shows the correct set count and per-set rest. Hand-built strength routinely gets this wrong — every exercise displays as 1 set even when you asked for 3. Exercise dict: `{name, sets, reps, rest_seconds, category?}`. `category` is optional; when given it must be one of Garmin's exercise categories (SQUAT, DEADLIFT, PUSH_UP, CARRY, etc.) — anything else, including "UNASSIGNED" / "OTHER", returns 400. |
+| `create_walk_run_workout(name, run_seconds, walk_seconds, repeats, warmup_min, cooldown_min, hr_zone)` | Walk/run interval sessions (couch-to-5K style) | Niche for a marathon-focused athlete; correct choice if the athlete asks for one. |
+| `create_z2_walk_workout(name, duration_min, hr_min, hr_max)` | Steady Z2 walks logged as **walking** (not running) | Uses `sportTypeKey: walking`. Niche — cross-training / recovery walks. |
+| `create_run_workout(name, run_seconds, warmup_min, cooldown_min, hr_zone, hr_min, hr_max)` | Simple continuous run with a **single** work interval | **Caveat:** WU and CD are emitted as `no.target`, which violates the "every step has a target" rule below. Only use when untargeted WU/CD is acceptable for that session (e.g. a plain recovery jog the athlete is running by feel anyway). Otherwise hand-build so WU/CD carry the standard custom HR Z1–Z2 band. |
+
+### Hand-build (via `upload_workout`) for
+
+Everything else — including the shapes this coach uses most:
+
+- **Threshold / VO2max intervals** — `N × (work + recovery)` inside a `RepeatGroupDTO` with mixed targets.
+- **Long runs with an embedded MP block** — multiple different-target work intervals in sequence.
+- **Strides / hill sprints** — mixed `no.target` fast steps + easy recoveries, sometimes with lap-button open steps.
+- **Any run session where WU/CD need the standard custom HR Z1–Z2 target** — i.e. almost all coached running sessions.
+
+### Scaffolding hand-built workouts
+
+When hand-building, don't invent JSON from memory:
+
+1. **Read `workout://reference/structure`** — the canonical MCP resource listing valid `stepTypeId`, `endConditionKey`, `workoutTargetTypeKey`, and `sportTypeKey` values with their integer IDs. Prefer this over guessing which id maps to which key or copying from an older workout.
+2. **Read the closest template as a starting scaffold**, then modify:
+   - `workout://templates/simple-run` — WU + run + CD (no target)
+   - `workout://templates/interval-running` — WU + `RepeatGroupDTO` + CD (400 m fast + 2 min recovery, distance-based)
+   - `workout://templates/tempo-run` — WU + single Z4 HR-zone block + CD
+   - `workout://templates/strength-circuit` — WU + repeat group + CD (rare direct use — prefer `create_strength_workout` for actual strength sessions)
+3. **Overlay the running-specific target rules** from **Workout Construction Patterns** below (custom HR bpm ranges, `pace.zone` in m/s, `no.target` for strides, lap-button open steps).
+
+### Batch scheduling
+
+`schedule_week(week=[{date, workout_id}])` schedules multiple already-uploaded workouts in one call and is **idempotent** — a workout already scheduled for the same date is reported as `already_scheduled` and the POST is skipped rather than creating a duplicate calendar entry. Prefer it over N separate `schedule_workout` calls when confirming a whole week's plan. Same explicit-consent gate as any other write.
+
 ## Workout Construction Patterns
 
-These patterns define how to technically build workouts for upload to Garmin. Structure steps so they display usefully on the watch and support lap-button transitions where duration/distance can't be predetermined.
+These patterns define how to technically build workouts for upload to Garmin (hand-built path — see "Prefer high-level builders where they fit" above for cases the builder tools already cover). Structure steps so they display usefully on the watch and support lap-button transitions where duration/distance can't be predetermined.
 
 ### Step targets (required)
 
 - **Every step must have an explicit target** — heart rate (single zone or custom range), pace, power, or pace zone. Do not leave warm-up, cool-down, work, or recovery steps as **no target** unless there is no alternative for that step type (rare).
-- **Garmin Connect — custom heart rate:** When a single named zone does not match the intent (typical for **warm-up** and **cool-down** on easy runs), use **Target → Heart Rate → Custom** (wording may vary slightly by app version). Set **lower HR** to the **bottom of Z1** and **upper HR** to the **top of Z2** using **this week’s bpm from a fresh `get_user_profile` (and related) pull**, not stale values from `athlete-profile.mdc` or prior chat — Connect/watch zone config can change. Adjust only if the plan calls for a narrower band (e.g. cool-down Z1-only).
+- **Garmin Connect — custom heart rate:** When a single named zone does not match the intent (typical for **warm-up** and **cool-down** on easy runs), use **Target → Heart Rate → Custom** (wording may vary slightly by app version). Set **lower HR** to the **bottom of Z1** and **upper HR** to the **top of Z2** using **this week’s bpm from a fresh `get_heart_rate_zones(sport="running")` pull** (see `training-plans.mdc` § "Heart rate zones — always refresh from Garmin"), not stale values from `athlete-profile.mdc` or prior chat — Connect/watch zone config can change. Adjust only if the plan calls for a narrower band (e.g. cool-down Z1-only).
 - **MCP `upload_workout` JSON (matches Garmin Connect / `python-garminconnect`):**
   - **Single named zone:** `targetType` → `heart.rate.zone` (`workoutTargetTypeId` 4) and **`zoneNumber`** 1–5. Omit `targetValueOne` / `targetValueTwo`.
   - **Custom bpm band (same as Connect “custom heart rate”):** still `heart.rate.zone`, but set **`targetValueOne`** = low bpm and **`targetValueTwo`** = high bpm (numbers preferred; Connect sometimes shows strings). Omit **`zoneNumber`**. This is what the Connect web app sends (e.g. 120–142).
