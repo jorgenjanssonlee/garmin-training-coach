@@ -31,13 +31,15 @@ Garmin Connect uses an account **time zone** for calendars, scheduling, and how 
 
 > **Tip:** This value helps reason about `schedule_workout` calendar dates vs the day you see in Connect (see `workout-handling.mdc`).
 
-## Race Calendar `YOU`
+## Race Calendar `AUTO` + `YOU`
 
-List your upcoming races. The AI uses these to determine your current training block phase automatically (base → build → peak → taper) and to periodise your training around the primary race.
+List your upcoming races here. The AI uses these — combined with races pulled from Garmin Connect — to determine your current training block phase automatically (base → build → peak → taper) and to periodise your training around the primary race.
+
+The coach reads Garmin Connect races (via `get_calendar_events`) first, then merges with this file. Use this file to add races that aren't in Connect, override priority (A/B/C), set a different goal time, or add coaching notes. Full precedence rules and the enrichment workflow live in `training-plans.mdc` § "Data sources" and § "Enriching `athlete-profile.mdc` from Connect".
 
 ### Primary Race (A race)
 
-- **Race:** (e.g., Stockholm Half Marathon)
+- **Race:** (e.g., Stockholm Half Marathon) — leave blank to accept Connect's `primary_event`
 - **Distance:** (e.g., half marathon or 21.1 km)
 - **Date:** (e.g., 2026-05-17)
 - **Goal time:** (e.g., sub-1:45)
@@ -49,7 +51,9 @@ These are training races, tune-ups, or lower-priority events. The AI will fit th
 - (e.g., B — Parkrun 5K, 2026-04-04, use as threshold test)
 - (e.g., C — Local 10K, 2026-04-19, race effort but not tapered)
 
-> **Tip:** Goals and races are separate in Garmin Connect. The Garmin MCP has no tool for planned races — `get_goals` returns only goals (e.g. distance targets), not race events. This Race Calendar is the primary source the AI uses for periodisation. Keep it updated when you add or change races.
+> **Tip:** Goals and races are separate in Garmin Connect. `get_goals` returns only goals (distance targets, etc.), never race events — those come from `get_calendar_events`. Add races in Connect (Training → Calendar → Add event) when you can; that keeps them in one place and lets your watch use them too. Only use this file when Connect doesn't have the race or you want to override how the AI treats it.
+
+> **Onboarding shortcut:** You don't have to fill this section in by hand. Ask the coach to _"pull my upcoming races from Garmin and populate my Race Calendar"_ and it will read `get_calendar_events`, auto-fill what Connect knows (name, date, distance, priority), and only ask you for what's missing — typically your **goal / target finish time** (currently not exposed by the MCP tool even if you set it in Connect) and any priority reclassification. It will show you the merged draft before writing.
 
 ## Training Availability `AUTO` + `YOU`
 
@@ -65,17 +69,7 @@ Available training days and preferred long run day can be auto-populated from `g
 
 All values below are auto-populated from Garmin. The AI should refresh these periodically — Garmin updates them dynamically from activity data when auto-detect is enabled.
 
-**Live zones vs this file:** Zone **bpm ranges** follow what is configured in **Garmin Connect** and on the **watch**; they can **change week to week** (manual edits, sync, auto-detect threshold updates, or zone-method changes). For **weekly plans and HR-targeted workouts**, the coach must **re-fetch** zone definitions from Garmin for that session (`get_user_profile`, `get_userprofile_settings`, `get_lactate_threshold` as in `training-plans.mdc`). Treat the **Zones** table below as **reference / last-known snapshot**, not the source of truth until refreshed.
-
-**Data retrieval priority:**
-
-1. Pull running-specific metrics from `get_user_profile` → `userData` (contains `lactateThresholdHeartRate`, `lactateThresholdSpeed`, `vo2MaxRunning`; parse any **HR zone** fields returned in the same payload).
-2. Pull detailed threshold data from `get_lactate_threshold` (includes FTP, staleness indicator).
-3. Pull resting HR from `get_rhr_day`.
-4. Use `get_userprofile_settings` when zone or HR settings are surfaced there and not complete in `get_user_profile`.
-5. If running-specific values are missing, fall back to generic profile values.
-
-> **Max HR** is set in Garmin Connect (either from Garmin's own formula or manually by the athlete). The current MCP tools may not expose it directly — if not available, ask the athlete to provide it during onboarding. Do NOT estimate max HR from recent activity data.
+**Live zones vs this file:** The values below are a **last-known snapshot**. Zones in Garmin Connect and on the watch can change week to week (manual edits, sync, auto-detect threshold updates, zone-method changes). The coach re-fetches them from Garmin before every weekly plan or HR-targeted workout — see `training-plans.mdc` § "Heart rate zones — always refresh from Garmin" for the operational rule and tool priority.
 
 - **Max HR:** `YOU` (from Garmin profile or manual entry, e.g., 185 bpm)
 - **Resting HR:** (auto, e.g., 38 bpm)
@@ -100,7 +94,7 @@ Default zone boundaries use %LTHR, matching Garmin Connect defaults. Recommended
 | 2    | Easy      | 80–88%   | Easy/conversational, base building |
 | 1    | Warm Up   | 65–79%   | Very easy, warm-up and cool-down   |
 
-> **Note:** When LTHR or zones feel outdated, ask the AI to refresh them from Garmin. If auto-detect is enabled on your device, these update after qualifying activities. Even when this file is up to date, the coach still pulls **current** Connect zones again before each **weekly plan** so prescriptions match the watch.
+> **Note:** When LTHR or zones feel outdated, ask the AI to refresh them from Garmin. If auto-detect is enabled on your device, these update after qualifying activities. To have the coach _write_ new zones back to Connect after a threshold test, ask explicitly — the operational rules for reading and writing zones live in `training-plans.mdc`.
 
 ## Recent Training Patterns `AUTO`
 
