@@ -12,3 +12,6 @@ __pycache__/
 .garth/
 # OS files
 .DS_Store
+
+# Local, temporary planning docs (not part of the shipped project)
+UPSTREAM_SYNC_PLAN.md
