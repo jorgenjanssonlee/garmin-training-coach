@@ -26,6 +26,56 @@ If **`uvx --python 3.12 --from git+https://github.com/Taxuspt/garmin_mcp garmin-
 
 See **README → [Garmin MCP: upstream updates & authentication](README.md)** (same heading in the repo root README) for full commands and troubleshooting.
 
+## Reduce MCP context size (optional)
+
+The Garmin MCP registers **150 tools** by default. Every one of those adds to the tool inventory the AI has to carry in context each turn, even when it never calls them. If you don't use Garmin's nutrition logging, gamification badges, or women's-health features, you can shrink the surface to just what this coach actually touches.
+
+Two env vars in the `garmin` MCP block of `.cursor/mcp.json` control it:
+
+- **`GARMIN_ENABLED_TOOLS`** — comma-separated **allowlist**. If set, only these tools are registered.
+- **`GARMIN_DISABLED_TOOLS`** — comma-separated **denylist**. Ignored if an allowlist is set.
+
+Tool names are case-insensitive. Names that match no tool are skipped with a warning on the MCP server's stderr — that makes typos easy to spot.
+
+### Recommended: denylist the tools you don't use
+
+Simplest starting point — turn off the ~27 tools a running coach doesn't need. Add an `env` block to `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "garmin": {
+      "command": "uvx",
+      "args": [
+        "--python", "3.12",
+        "--from", "git+https://github.com/Taxuspt/garmin_mcp",
+        "garmin-mcp"
+      ],
+      "env": {
+        "GARMIN_DISABLED_TOOLS": "get_nutrition_daily_food_log,get_nutrition_summary_between_dates,get_nutrition_daily_meals,get_nutrition_daily_settings,set_nutrition_daily_settings,search_foods,get_custom_foods,get_custom_food_serving_units,create_custom_food,update_custom_food,delete_custom_food,log_custom_food,log_food,delete_food_log,upsert_and_log,get_earned_badges,get_adhoc_challenges,get_available_badge_challenges,get_badge_challenges,get_non_completed_badge_challenges,get_inprogress_virtual_challenges,get_pregnancy_summary,get_menstrual_data_for_date,get_menstrual_calendar_data,add_body_composition,set_blood_pressure,add_hydration_data"
+      }
+    }
+  }
+}
+```
+
+That removes:
+
+- **All 15 nutrition tools** — food logs, meals, custom foods.
+- **6 gamification tools** — earned badges, adhoc / badge / virtual challenges. `get_goals`, `get_race_predictions`, and `get_personal_record` live in the same upstream module but are **kept** — they're running-coaching-critical.
+- **3 women's health tools** — pregnancy and menstrual data (remove from the list if applicable to you).
+- **3 manual health-data writes** — body composition, blood pressure, hydration entries.
+
+Leaves ~123 tools registered. Add or remove entries to match your setup — e.g. keep `add_body_composition` if you use it, drop `get_courses` / `download_course_gpx` / `upload_course` / `delete_course` if you don't build GPS routes, drop the 3 gear tools (`get_gear`, `get_gear_stats`, `get_gear_activities`) if you don't rotate shoes.
+
+### Alternative: allowlist just the tools the coach uses
+
+For maximum context savings, `GARMIN_ENABLED_TOOLS` gives you an explicit allowlist — the coach's `.mdc` files reference roughly 50 tools. Building the list from scratch is tedious, so a good workflow is: start with the denylist above, run the coach for a few weeks, note any tool the AI mentions or tries to call that isn't in your working set, then flip to `GARMIN_ENABLED_TOOLS` once the list is stable.
+
+### After changing the env block
+
+Toggle the `garmin` MCP off and on in **Cursor > Settings > Cursor Settings > Tools & MCP** (or run **Developer: Reload Window**) so Cursor restarts the server with the new environment. The tool count in the MCP panel updates immediately — that's how you confirm the filter took effect. If you see `unknown filter names` warnings on the MCP server's stderr, they list tool names that didn't match anything (usually a typo — the tool got renamed upstream, or you added an extra space).
+
 ## Getting Started — Athlete Profile Setup
 
 Before using the coach, set up your athlete profile. The easiest way is to let the AI do it for you. Open a new Agent chat in Cursor and paste this prompt:
