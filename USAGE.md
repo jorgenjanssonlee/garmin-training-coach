@@ -169,27 +169,27 @@ The AI will apply the change immediately and ask whether you want to update your
 
 ## Customization and fine-tuning
 
-The coaching instructions are split across four Cursor Rules files (`.mdc`) in `.cursor/rules/`. The `.cursor` directory is hidden in macOS Finder but fully visible inside Cursor's file explorer -- browse to it there to edit the files.
+The coaching instructions are split across five Cursor Rules files (`.mdc`) in `.cursor/rules/`. The `.cursor` directory is hidden in macOS Finder but fully visible inside Cursor's file explorer -- browse to it there to edit the files.
 
 | File                    | Purpose                                                      | Edit?                 |
 | ----------------------- | ------------------------------------------------------------ | --------------------- |
 | `running-coach.mdc`     | Core coaching persona, analysis methodology, tool reference  | Rarely                |
-| `athlete-profile.mdc`   | **Your goals, zones, training preferences, injury history**  | **Yes -- start here** |
+| `athlete-profile.mdc`   | **Your goals, zones, training preferences, injury history** (gitignored live copy of `docs/athlete-profile.template.md`) | **Yes -- start here** |
 | `training-plans.mdc`    | Weekly plan output format, workout creation workflow         | Optional              |
 | `workout-handling.mdc`  | Workout upload confirmation, reuse, step notes, construction | Optional              |
 | `injury-prevention.mdc` | Health monitoring thresholds, red flags, response protocol   | Optional              |
 
 **To personalise the coach, edit `athlete-profile.mdc`** (or run the onboarding flow above, or ask the chat to update them for you). Key sections:
 
-- Race calendar (primary A-race + secondary B/C races)
+- Race calendar (overrides and notes on top of races already in Garmin Connect)
 - Training availability and time constraints
-- Heart rate zones and LTHR (auto-populated from Garmin)
+- Heart rate zones and LTHR (last-known snapshot; the coach refreshes these from Garmin)
 - Interval preferences (Norwegian singles, short HIIT, etc.)
 - Warm-up and cool-down durations
 - Training philosophy (80/20, progressive overload, etc.)
 - Injury history
 
-The other three files contain general coaching methodology that works for any runner. You can edit them manually or ask the AI to update them for you in chat. Examples:
+The other four files contain general coaching methodology that works for any runner. You can edit them manually or ask the AI to update them for you in chat. Examples:
 
 **athlete-profile.mdc:**
 
