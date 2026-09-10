@@ -78,13 +78,54 @@ Toggle the `garmin` MCP off and on in **Cursor > Settings > Cursor Settings > To
 
 ## Getting Started — Athlete Profile Setup
 
-Before using the coach, set up your athlete profile. The easiest way is to let the AI do it for you. Open a new Agent chat in Cursor and paste this prompt:
+### First run: copy the template
+
+The shipped profile lives at **`docs/athlete-profile.template.md`**. On first use, copy it into place:
+
+```sh
+cp docs/athlete-profile.template.md .cursor/rules/athlete-profile.mdc
+```
+
+The live file at `.cursor/rules/athlete-profile.mdc` is **gitignored** — your personal data (weight, HR, races, injury history, name) stays local and never enters git history, even if you fork or push this repo somewhere. Cursor only loads the live copy; the template in `docs/` is never applied as a rule.
+
+### Fill it in
+
+The easiest way is to let the AI do it for you. Open a new Agent chat in Cursor and paste this prompt:
 
 > "Run the onboarding flow: read my current athlete-profile.mdc, pull what you can from my Garmin data (resting HR, max HR, VO2max, recent training patterns, typical weekly structure, **time zone from `get_userprofile_settings`**), confirm or correct the time zone with me, and walk me through filling in the rest — goals, race targets, preferred interval style, training availability, injury history. Update the file when we're done."
 
 The AI will fetch your Garmin data, ask you questions about things it can't determine automatically, and write everything to `athlete-profile.mdc`. You can re-run this any time your goals or circumstances change.
 
 Alternatively, open `.cursor/rules/athlete-profile.mdc` and fill in the placeholder values manually.
+
+### Merging upstream template updates
+
+When this repo evolves the template (new fields, refined guidance, tighter zone tables), your live file **won't auto-update** — it's a local copy, independent from git. The template carries a `template_version:` stamp in its frontmatter and a changelog block near the top so you can tell when upstream has moved.
+
+**Recommended workflow after `git pull`:**
+
+1. Check whether the template changed since your last merge:
+
+   ```sh
+   git log -1 --oneline -- docs/athlete-profile.template.md
+   ```
+
+2. If it did, open `docs/athlete-profile.template.md` and read the changelog block near the top — it lists what changed in each version.
+
+3. Copy the structural additions into your live file. Two ways:
+
+   - **Manual diff:** open both side by side (e.g. `code --diff docs/athlete-profile.template.md .cursor/rules/athlete-profile.mdc`) and copy new sections/fields across while keeping your personal values intact.
+   - **AI-assisted (usually easier):** in a fresh Agent chat, paste:
+
+     > "Read `docs/athlete-profile.template.md` and my live `.cursor/rules/athlete-profile.mdc`. Update the live file with any new upstream fields, sections, or refined guidance from the template — but don't change any of my personal values. Show me the diff before writing."
+
+4. Once you're happy with the merge, update the `template_version:` line in your live file's frontmatter to match the template's version. That marks your merge point for next time.
+
+**Edge cases:**
+
+- **Field renamed upstream** — the AI can usually spot this from context, but eyeball the diff before writing.
+- **Field removed upstream** — decide whether the personal value belongs somewhere else (e.g. under "Other Notes") or can be dropped.
+- **Section reorganised** — the AI will preserve your values under the new structure; verify no personal values were dropped.
 
 ## Talking to the Coach
 
