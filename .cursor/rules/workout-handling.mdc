@@ -10,11 +10,12 @@ alwaysApply: true
 
 **Never write to Garmin without explicit athlete approval.**
 
-Do not call `upload_workout`, `schedule_workout`, or `delete_workout` until the athlete has explicitly confirmed. Examples of valid confirmation: "yes, upload it", "go ahead", "push to Garmin", "schedule it", "delete that one".
+Do not call any write tool — `upload_workout` / `upload_workouts`, `schedule_workout` / `schedule_workouts` / `schedule_week`, `unschedule_workout` / `unschedule_workouts`, `delete_workout` / `delete_workouts`, or `set_heart_rate_zones` — until the athlete has explicitly confirmed. Examples of valid confirmation: "yes, upload it", "go ahead", "push to Garmin", "schedule it", "unschedule it", "delete that one", "update my zones".
 
 - When presenting a new workout, end with a clear question: _"Should I upload this to Garmin Connect?"_ or _"Ready to push this to Connect?"_
 - When offering to schedule, ask: _"Should I schedule this for [date]?"_
-- When proposing to delete a workout, ask: _"Confirm you want this deleted?"_
+- When proposing to move or cancel a scheduled session, ask: _"Should I unschedule [session] from [date]?"_ (the definition stays in the library).
+- When proposing to delete a workout, ask: _"Confirm you want this deleted from your library?"_ and remind the athlete this also breaks any future calendar entries pointing at it.
 - Never assume consent from context. If the athlete says "create a workout" but doesn't explicitly say "upload it", present the workout and wait for approval before uploading.
 
 ## Reuse & Update Existing Workouts
@@ -38,10 +39,35 @@ Keep the Garmin Connect workout list manageable. Avoid creating new workouts whe
 
 ### Workflow
 
-1. Before creating a workout, call `get_workouts` and `get_scheduled_workouts` (for a future date range).
-2. Identify workouts not scheduled for future days.
-3. If a reusable match exists, propose: _"I can update your existing 'Easy60 Aerobic Z2' to Easy65 for next week — that keeps your workout list tidy. OK?"_ Wait for confirmation, then update (which may involve delete + re-upload with the new structure, or an update if the API supports it).
-   For weekly planning, review all planned workouts in one batch and present all of them to the athlete for approval as a group before uploading.
+1. **Survey the current state** before writing anything:
+   - `get_workouts` — workout definitions in the library.
+   - `get_scheduled_workouts(start_date, end_date)` — calendar entries for the target window.
+   - `get_garmin_coach_workouts(calendar_date)` — sessions Garmin's own coach or an active adaptive training plan has already queued for that week. Flag any overlaps to the athlete before scheduling on top — Garmin Coach output and manual coach output can silently pile up on the same day. (`get_training_plan_workouts` is a legacy alias returning the same data; don't call both.)
+
+2. **Pick the right change pattern for the intent.** The MCP has no in-place update tool; combine primitives instead:
+
+   | Intent | Right pattern | Why |
+   |---|---|---|
+   | Reuse an existing workout on a new date | `schedule_workout(existing_id, new_date)` | The definition is unchanged; no upload needed. |
+   | Move a scheduled session to a different day | `unschedule_workout(scheduled_workout_id)` + `schedule_workout(workout_id, new_date)` | Preserves the workout definition (and any completed-workout history on other dates). |
+   | Cancel a session for this week only | `unschedule_workout(scheduled_workout_id)` | Leaves the definition in the library so it can be scheduled again later. |
+   | Progress a workout (Easy60 → Easy65) when the old definition is **not** scheduled anywhere in the future | `delete_workout(old_id)` → `upload_workout(new_json)` → `schedule_workout(new_id, date)` | Only way to actually replace a definition; safe because no calendar entry points at the old id. |
+   | Progress a workout when the old definition **is** scheduled on any future date, or you want to keep it around for reuse | `upload_workout(new_json)` with an updated name + `schedule_workout(new_id, date)`; leave the old definition alone | Deleting an in-use definition invalidates every future calendar entry pointing at its id. Accept the extra library entry. |
+
+3. **`unschedule_workout` takes the calendar-entry id (`scheduled_workout_id`), not the workout id.** Get it from `get_scheduled_workouts` — the field is literally `scheduled_workout_id`, distinct from `workout_id`. Passing the workout id will fail.
+
+4. **Eventual consistency:** the scheduled-workouts index is not immediate. If you just scheduled an entry in the same turn, re-call `get_scheduled_workouts` (or wait) before trying to unschedule it — the new id may not be there yet.
+
+5. **Confirm the whole plan once, then execute.** For weekly planning, present every intended change (uploads, reschedules, cancellations, deletions) in a single block and get one group approval before executing — one confirmation round-trip beats N.
+
+### Batch operations for whole-week planning
+
+When acting on multiple items in one turn, prefer the batch tools over N single calls:
+
+- **`upload_workouts([workout_json, …])`** — upload N new definitions in one call.
+- **`schedule_workouts([{workout_id, calendar_date}, …])`** — schedule N calendar entries. Each item can also be `{workout_data, calendar_date}` to upload-and-schedule a fresh definition in one hop, skipping the workout_id round-trip. Idempotent per entry (entries already scheduled for the same date are reported as `already_scheduled`, not duplicated). The runner-focused `schedule_week([{date, workout_id}, …])` in `workout_builders.py` is the lighter variant with the same idempotent behaviour when you don't need inline uploads.
+- **`unschedule_workouts([scheduled_workout_id, …])`** — clear N calendar entries in one call. Same "calendar-entry id, not workout id" rule.
+- **`delete_workouts([workout_id, …])`** — permanently remove N definitions. Same "prefer unschedule when you're only clearing the calendar" rule.
 
 ## Workout-level description vs step notes
 
