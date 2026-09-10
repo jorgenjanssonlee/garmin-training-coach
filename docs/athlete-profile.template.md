@@ -2,9 +2,31 @@
 description: Athlete profile - personal goals, training preferences, and coaching philosophy
 globs:
 alwaysApply: true
+template_version: 2026-09-10
 ---
 
+<!--
+================================================================
+This is the shipped template. Do NOT edit it directly.
+================================================================
+
+First-time setup:
+    cp docs/athlete-profile.template.md .cursor/rules/athlete-profile.mdc
+
+Then edit `.cursor/rules/athlete-profile.mdc` — Cursor only loads that
+file (this template is not in `.cursor/rules/` so it's never applied as
+a rule, and the live path is gitignored so your personal data stays
+local, out of git history).
+
+Merging upstream template updates into an already-customised live file:
+    See USAGE.md → "Merging upstream template updates" for the workflow.
+-->
+
 # Athlete Profile
+
+> **Template changelog** (most recent first — full history via `git log docs/athlete-profile.template.md`):
+>
+> - **2026-09-10** — Race Calendar section retagged `AUTO + YOU` with `get_calendar_events` as the primary race source (full precedence rules live in `training-plans.mdc`). HR Zones section reduced to a snapshot-only view with a pointer to the operational refresh rules. Behaviour-rule duplication (tool priority lists, precedence blocks, Max HR handling) moved out to the rule files — this file now owns state + user-facing context only. Onboarding shortcut tip added for auto-populating races from Connect.
 
 This file stores your personal goals, preferences, and physical parameters. The AI coach uses it as context for every conversation.
 

@@ -15,3 +15,8 @@ __pycache__/
 
 # Local, temporary planning docs (not part of the shipped project)
 UPSTREAM_SYNC_PLAN.md
+
+# Athlete's personal profile — copied from docs/athlete-profile.template.md on
+# first run and edited locally. Personal data (name, weight, HR, races, injury
+# history, etc.) stays out of git. See USAGE.md → "Athlete Profile Setup".
+.cursor/rules/athlete-profile.mdc
