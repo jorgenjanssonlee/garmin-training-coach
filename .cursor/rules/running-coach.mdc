@@ -111,19 +111,28 @@ Available writes:
 - Clearly state any assumptions used to isolate work segments or classify workout type.
 - If expected data is missing, fall back gracefully: typed splits → splits → split summaries.
 
-## Available MCP Tools (Taxuspt/garmin_mcp — 96+ tools)
+## Available MCP Tools (Taxuspt/garmin_mcp — 150 tools + 5 workout-template resources across 17 modules)
 
-The `garmin` MCP server provides comprehensive Garmin Connect access. Key groups:
+The `garmin` MCP server provides comprehensive Garmin Connect access. Key groups, ordered by relevance to running coaching:
 
 | Category | Count | Examples |
 |---|---|---|
-| Activity Management | 14 | List activities, detailed stats, splits, HR zones, weather |
-| Health & Wellness | 31 | Sleep, HR, HRV, stress, body battery, steps, SpO2, respiration, training readiness |
-| Training & Performance | 9 | VO2max, fitness age, race predictions, training status, endurance/hill scores |
-| Workouts | 8 | Create, upload, schedule, delete structured workouts |
-| Weight & Body Composition | 5 | Weight tracking, body fat, muscle mass |
-| Gear Management | 5 | Track shoes, equipment stats |
-| Nutrition | 8 | Food logs, meals, custom foods |
-| Devices | 7 | Connected devices, settings, alarms |
-| Challenges & Badges | 10 | Active challenges, earned badges |
-| User Profile | 3 | `get_user_profile`, `get_userprofile_settings`, etc. — **running HR zones / threshold** for current bpm targets |
+| Activity Management | 21 | List (`get_activities_by_date`), detailed stats, splits (typed / raw / summaries), HR zones, weather. **Post-run writes:** `set_perceived_effort`, `set_activity_feel`, `set_activity_name`, `set_activity_type`, `set_activity_event_type`, `create_manual_activity` (see § "Post-run debrief writes" above). |
+| Activity Analysis | 5 | Deep-dive tools: `get_activity_fit_messages`, `get_activity_fit_data`, `get_power_duration_curve`, `download_activity_file`, `set_fit_download_dir`. Use for one-off analyses that need raw FIT data. |
+| Workouts | 14 | Get / upload / schedule / **unschedule** / delete (single + batch), `get_scheduled_workouts`, `get_garmin_coach_workouts` for adaptive-plan overlap (see `workout-handling.mdc`). |
+| Workout Builders | 5 | High-level: `create_run_workout`, `create_walk_run_workout`, `create_z2_walk_workout`, **`create_strength_workout`** (correct set-count), `schedule_week` (idempotent batch schedule). Coverage rules in `workout-handling.mdc` § "Prefer high-level builders where they fit". |
+| Workout Templates *(resources, not tools)* | 5 | `workout://templates/{simple-run,interval-running,tempo-run,strength-circuit}` scaffolds + `workout://reference/structure` canonical id tables for hand-built workouts. |
+| Calendar Events | 1 | **`get_calendar_events`** — the only source for planned races (see `training-plans.mdc` § "Data sources"). |
+| Training & Performance | 18 | **`get_training_load_trend`** (CTL/ATL/TSB/ACWR), `get_training_load_balance` (Load Focus), **`get_running_tolerance`** + `_trend` (running-specific load model), `get_hrv_trend`, `get_vo2max_trend`, `get_acclimation`, `get_lactate_threshold`, `get_training_status`, `get_training_effect`, fitness age, hill / endurance scores. |
+| Health & Wellness | 31 | **`get_morning_training_readiness`** + `get_training_readiness`. **Prefer `*_summary` variants** (`get_sleep_summary` / `_range`, `get_heart_rates_summary`, `get_stress_summary`) — ~350–500 B vs 25–50 KB for the full time-series. Includes SpO2, body battery, respiration, RHR. |
+| User Profile | 6 | **`get_heart_rate_zones` / `set_heart_rate_zones`**, `get_lactate_threshold`, `get_user_profile`, `get_userprofile_settings`, `get_max_metrics` — running HR zones / threshold for current bpm targets. |
+| Weight & Body Composition | 5 | Weight tracking, body fat, muscle mass. |
+| Devices | 6 | Connected devices, settings, alarms. |
+| Nutrition | 15 | Food logs, meals, custom foods. Off-scope for a run coach — good candidate for the context-trim denylist. |
+| Courses | 5 | List / download-GPX / upload / delete GPS training courses. Useful only if the athlete builds routes in Connect. |
+| Gear Management | 3 | Track shoes and equipment stats — useful for injury correlation (rotation, mileage per pair). |
+| Data Management | 3 | Manual entries: `add_body_composition`, `set_blood_pressure`, `add_hydration_data`. |
+| Challenges & Badges *(mixed)* | 9 | **Contains running-critical tools:** `get_goals`, `get_race_predictions`, `get_personal_record`. Rest (`get_earned_badges`, `get_adhoc_challenges`, `get_available_badge_challenges`, `get_badge_challenges`, `get_non_completed_badge_challenges`, `get_inprogress_virtual_challenges`) are gamification — off-scope. |
+| Women's Health | 3 | `get_pregnancy_summary`, `get_menstrual_data_for_date`, `get_menstrual_calendar_data`. |
+
+> **Context-trim tip.** 150 tools is a lot of inventory to carry per turn. If you're using this coach heavily, set `GARMIN_ENABLED_TOOLS` or `GARMIN_DISABLED_TOOLS` in `.cursor/mcp.json` to hide categories you don't use — see **`USAGE.md` § "Reduce MCP context size (optional)"** for a ready-to-paste denylist.
