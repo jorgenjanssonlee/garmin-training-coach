@@ -2,39 +2,30 @@
 
 An AI-powered running training coach that connects Cursor's AI agent to your Garmin ecosystem via MCP (Model Context Protocol). The agent can analyze your training data, health metrics, and recovery status, then create and push structured workouts directly to your Garmin device.
 
-### Background
-
-This project replaces an earlier approach using [ChatGPT Custom GPTs with Strava data](https://github.com/jorgenjanssonlee/ChatGPT-Running-coach-from-Strava-data). Compared to that setup, this offers:
-
-- **Richer data** -- pulls directly from Garmin Connect (96+ data tools) instead of Strava's more limited API, including health metrics (sleep, HRV, stress, body battery, training readiness) that Strava doesn't expose
-- **Workout creation** -- generates structured workouts and uploads them directly to your Garmin device
-- **Model choice** -- Cursor supports multiple LLM providers (Claude, GPT-4, Gemini, etc.), not just ChatGPT
-- **Persistent coaching rules** -- Cursor Rules give the AI consistent coaching behavior across conversations, similar to GPT Instructions but with more flexibility
-
-**Trade-off:** This requires [Cursor IDE](https://cursor.com), which is a developer-oriented tool. If you're not comfortable with a code editor and terminal commands, the [ChatGPT + Strava approach](https://github.com/jorgenjanssonlee/ChatGPT-Running-coach-from-Strava-data) may be more accessible.
-
 ### Why Cursor?
 
 This project started as a [ChatGPT Custom GPT pulling data from Strava](https://github.com/jorgenjanssonlee/ChatGPT-Running-coach-from-Strava-data). It worked, but had limitations that eventually pushed me to Cursor:
 
-- **Cost consolidation** -- I already had a Cursor subscription for work, so this solution comes at no extra cost. ChatGPT requires a paid plan for Custom GPTs, and Claude requires a paid plan for Projects. AI subscription costs add up quickly, and consolidating into one tool makes sense.
-- **Better data** -- Strava doesn't expose the health and wellness metrics that Garmin collects (sleep, HRV, stress, body battery, training readiness, SpO2). With Cursor + MCP, the AI pulls directly from Garmin Connect and gets the full picture.
-- **Direct Garmin interaction** -- ChatGPT Custom GPTs couldn't interact with Garmin at all. Creating workouts meant copy-pasting from the chat into Garmin Connect's workout builder, which got tedious even after streamlining the format. Now the AI creates and schedules workouts directly on the device.
-- **Familiarity** -- I already spend a lot of time in Cursor for work, so using the same tool for coaching keeps everything in one place.
+- **Better data** - Strava doesn't expose the health and wellness metrics Garmin collects (sleep, HRV, stress, body battery, training readiness). Cursor + MCP pulls directly from Garmin Connect (150 tools) and gets the full picture.
+- **Direct Garmin interaction** - ChatGPT Custom GPTs couldn't talk to Garmin at all. Creating workouts meant copy-pasting from the chat into Connect's workout builder. Now the AI creates and schedules workouts on the device.
+- **Model choice** - Cursor supports multiple LLM providers (Claude, GPT-4, Gemini, etc.), not just ChatGPT.
+- **Persistent coaching rules** - Cursor Rules give the AI consistent coaching behavior across conversations, similar to GPT Instructions but with more flexibility.
+- **Cost consolidation** - I already had a Cursor subscription for work, so this solution comes at no extra cost. ChatGPT requires a paid plan for Custom GPTs, and Claude requires a paid plan for Projects.
+- **Familiarity** - I already spend a lot of time in Cursor for work, so using the same tool for coaching keeps everything in one place.
 
-That said, Cursor is a developer tool. If you're not technical, the ChatGPT + Strava setup is simpler to get running.
+**Trade-off:** Cursor is a [developer-oriented IDE](https://cursor.com). If you're not comfortable with a code editor and terminal commands, the [ChatGPT + Strava approach](https://github.com/jorgenjanssonlee/ChatGPT-Running-coach-from-Strava-data) is simpler to get running.
 
 ### Credits & Acknowledgements
 
 This project would not be possible without:
 
-- **[Taxuspt/garmin_mcp](https://github.com/Taxuspt/garmin_mcp)** -- The Garmin Connect MCP server that makes this entire project work. Exposes 95+ tools covering ~88% of the Garmin Connect API via MCP. Without this, there is no AI coaching.
+- **[Taxuspt/garmin_mcp](https://github.com/Taxuspt/garmin_mcp)** -- The Garmin Connect MCP server that makes this entire project work. Exposes 150 tools plus 5 workout-template resources across 17 modules. Without this, there is no AI coaching.
 - **[cyberjunky/python-garminconnect](https://github.com/cyberjunky/python-garminconnect)** -- The Python library that `garmin_mcp` is built on. Provides the underlying Garmin Connect API client.
 - **[AI-Powered Triathlon Coaching](https://dzone.com/articles/ai-powered-triathlon-coaching-claude-garmin)** (DZone, 2025) -- The article that inspired this project.
 
 ## How It Works
 
-A single MCP server ([Taxuspt/garmin_mcp](https://github.com/Taxuspt/garmin_mcp)) bridges Cursor to Garmin Connect, providing 96+ tools covering activities, health metrics, workouts, training performance, gear, nutrition, and more.
+A single MCP server ([Taxuspt/garmin_mcp](https://github.com/Taxuspt/garmin_mcp)) bridges Cursor to Garmin Connect, providing 150 tools covering activities, health metrics, workouts, training performance, gear, nutrition, and more.
 
 Cursor Rules provide persistent coaching instructions so the AI agent behaves as an experienced running coach across every conversation.
 
@@ -55,6 +46,7 @@ garmin-training-coach/
 │   └── athlete-profile.template.md    # Shipped profile template (upstream-owned);
 │                                      #   copy this to .cursor/rules/athlete-profile.mdc on first run
 ├── .gitignore
+├── LICENSE
 ├── README.md                          # Overview and installation
 ├── USAGE.md                           # Day-to-day usage guide
 ```
@@ -72,8 +64,7 @@ garmin-training-coach/
 
 > **Security note:** No credentials are stored in any project file. Authentication uses pre-saved tokens in `~/.garminconnect` (macOS) or `%USERPROFILE%\.garminconnect` (Windows). Neither your password nor tokens are shared with the AI or any third party.
 
-<details>
-<summary>macOS</summary>
+macOS
 
 ### 1. Install Python 3.12 and uv (if not already installed)
 
@@ -92,10 +83,11 @@ cd ~/Documents
 git clone https://github.com/jorgenjanssonlee/garmin-training-coach.git
 ```
 
-Or create the directory manually and copy the `.cursor/` config files from this repo into it:
+Or create the directory manually and copy `.cursor/` plus `docs/athlete-profile.template.md` from this repo into it (you still need the template for first-run profile setup — see [USAGE.md](USAGE.md)):
 
 ```bash
 mkdir -p ~/Documents/garmin-training-coach/.cursor/rules
+mkdir -p ~/Documents/garmin-training-coach/docs
 ```
 
 ### 3. Authenticate with Garmin Connect
@@ -119,10 +111,7 @@ To force re-auth when tokens expire: `uvx --python 3.12 --from git+https://githu
 3. `garmin` should appear. Toggle to **enabled**. Green = running.
 4. If red, verify tokens with the full `uvx` line in **Garmin MCP: upstream updates & authentication** below.
 
-</details>
-
-<details>
-<summary>Windows</summary>
+Windows
 
 ### 1. Install Python 3.12 and uv (if not already installed)
 
@@ -150,10 +139,11 @@ cd $env:USERPROFILE\Documents
 git clone https://github.com/jorgenjanssonlee/garmin-training-coach.git
 ```
 
-Or create the directory manually and copy the `.cursor/` config files from this repo:
+Or create the directory manually and copy `.cursor/` plus `docs/athlete-profile.template.md` from this repo (you still need the template for first-run profile setup — see [USAGE.md](USAGE.md)):
 
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\Documents\garmin-training-coach\.cursor\rules"
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\Documents\garmin-training-coach\docs"
 ```
 
 ### 3. Authenticate with Garmin Connect
@@ -177,11 +167,9 @@ To force re-auth when tokens expire: `uvx --python 3.12 --from git+https://githu
 3. `garmin` should appear. Toggle to **enabled**. Green = running.
 4. If red, verify tokens with the full `uvx` line in **Garmin MCP: upstream updates & authentication** below.
 
-</details>
-
 ## Garmin MCP: upstream updates & authentication
 
-Cursor runs the server via **`uvx --from git+https://github.com/Taxuspt/garmin_mcp`** (see `.cursor/mcp.json`). **`uv` caches** that Git install, so you are not guaranteed the latest upstream `main` until you run an explicit refresh.
+Cursor runs the server via `uvx --from git+https://github.com/Taxuspt/garmin_mcp` (see `.cursor/mcp.json`). `uv` **caches** that Git install, so you are not guaranteed the latest upstream `main` until you run an explicit refresh.
 
 ### Refresh the MCP package from Git
 
@@ -199,7 +187,7 @@ After refreshing: **Cursor > Settings > Cursor Settings > Tools & MCP** → turn
 
 ### Authentication changes & re-login
 
-Upstream `garmin_mcp` / `python-garminconnect` have **switched to a new Garmin login path** in May 2026 (see e.g. [garmin_mcp#77](https://github.com/Taxuspt/garmin_mcp/pull/77)). Older saved tokens may fail **`--verify`**. Re-authenticate interactively (MFA in the terminal when prompted):
+Upstream `garmin_mcp` / `python-garminconnect` have **switched to a new Garmin login path** in May 2026 (see e.g. [garmin_mcp#77](https://github.com/Taxuspt/garmin_mcp/pull/77)). Older saved tokens may fail `--verify`. Re-authenticate interactively (MFA in the terminal when prompted):
 
 ```bash
 uvx --python 3.12 --from git+https://github.com/Taxuspt/garmin_mcp garmin-mcp-auth --force-reauth
