@@ -43,17 +43,23 @@ Cursor Rules provide persistent coaching instructions so the AI agent behaves as
 ```
 garmin-training-coach/
 ├── .cursor/
-│   ├── mcp.json                  # MCP server configuration
+│   ├── mcp.json                       # MCP server configuration
 │   └── rules/
-│       ├── running-coach.mdc     # Core coaching persona and analysis methodology
-│       ├── athlete-profile.mdc   # Your goals, zones, preferences (edit this one)
-│       ├── training-plans.mdc    # Plan output format and workout workflow
-│       ├── workout-handling.mdc  # Workout upload/schedule rules, reuse, notes, construction
-│       └── injury-prevention.mdc # Health monitoring and red flags
+│       ├── running-coach.mdc          # Core coaching persona and analysis methodology
+│       ├── athlete-profile.mdc        # Your goals, zones, preferences — gitignored;
+│       │                              #   copy from docs/ on first run, then edit this
+│       ├── training-plans.mdc         # Plan output format and workout workflow
+│       ├── workout-handling.mdc       # Workout upload/schedule rules, reuse, notes, construction
+│       └── injury-prevention.mdc      # Health monitoring and red flags
+├── docs/
+│   └── athlete-profile.template.md    # Shipped profile template (upstream-owned);
+│                                      #   copy this to .cursor/rules/athlete-profile.mdc on first run
 ├── .gitignore
-├── README.md                     # Overview and installation
-├── USAGE.md                      # Day-to-day usage guide
+├── README.md                          # Overview and installation
+├── USAGE.md                           # Day-to-day usage guide
 ```
+
+**Why the split?** `athlete-profile.mdc` holds your personal data (goals, weight, HR, races, injury history). Keeping it gitignored means that data stays local — never enters git history, even if you fork this repo. `docs/athlete-profile.template.md` is the upstream-owned template you copy from on first run; when the template evolves, you can pull upstream and merge the changes into your live file at your leisure. Full first-run and merge workflows are in [USAGE.md](USAGE.md).
 
 ## Prerequisites
 
@@ -211,7 +217,8 @@ Toggle **garmin** off/on in MCP settings again.
 
 Installation complete. See **[USAGE.md](USAGE.md)** for:
 
-- Setting up your athlete profile (onboarding flow, including time zone confirmation)
+- **First-run setup:** copy `docs/athlete-profile.template.md` → `.cursor/rules/athlete-profile.mdc`, then run the onboarding flow (including time zone confirmation)
+- **Merging upstream template updates** into your live profile after `git pull`
 - Example prompts and how to talk to the coach
 - Customizing the coaching rules
 
