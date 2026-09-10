@@ -8,45 +8,84 @@ alwaysApply: true
 
 ## Garmin Warning Signs
 
-Monitor these metrics for early signs of overtraining or injury risk:
+Monitor these metrics for early signs of overtraining or injury risk. Each subsection names the MCP tool(s) that answer its question.
+
+> **Context-efficient reads.** Prefer the `*_summary` and `*_trend` tools over their full time-series variants (`get_sleep_data`, `get_heart_rates`, `get_stress_data`) — the summaries are ~350–500 bytes vs 25–50 KB and carry the fields these heuristics actually use. Fall back to time-series only when the summary is missing a specific field.
 
 ### Training Readiness
 
-- A single low score can be ignored (poor sleep, stress).
-- **Declining readiness across 3+ consecutive days** warrants reduced training load.
-- Readiness below 30 is a strong signal to rest or do recovery-only work.
+Sources: `get_morning_training_readiness(date)` for a concise daily go/no-go (score, level, HRV status, sleep score, body battery, acute/chronic load). Escalate to `get_training_readiness(date)` when a score needs diagnosing — it returns the same score plus per-factor breakdowns (`sleep_factor_percent`, `recovery_factor_percent`, `hrv_factor_percent`, `stress_history_factor_percent`, `sleep_history_factor_percent`) with Garmin's own feedback phrases.
+
+- A single low score can be ignored (poor sleep, stress, travel).
+- **Declining readiness across 3+ consecutive days** warrants reduced training load. Confirm with the underlying factors: a persistently low `hrv_factor_percent` or `recovery_factor_percent` is more informative than the headline score.
+- **Score below 30** is a strong signal to rest or do recovery-only work.
 
 ### Heart Rate
 
-- **Cardiac drift / decoupling:** Some HR rise during prolonged steady-state running is normal (cardiac drift). The key metric is _decoupling_ — the percentage divergence between pace and HR over a run. In a 60+ min steady aerobic run on flat terrain in moderate conditions, **≤5% decoupling indicates good aerobic fitness** (Friel). **>5% decoupling** in controlled conditions suggests declining aerobic fitness. Heat, humidity, and dehydration amplify drift significantly, so factor conditions before drawing conclusions. The important signal is **a trend of increasing decoupling across workouts over weeks**, not a single run.
-- **Elevated resting HR:** A resting HR 5+ bpm above the athlete's baseline for 2+ days suggests accumulated fatigue, illness, or stress.
-- **Slow HR recovery post-run:** Declining recovery speed across sessions is an early overtraining marker.
+- **Cardiac drift / decoupling.** Some HR rise during prolonged steady-state running is normal. The key metric is _decoupling_ — the percentage divergence between pace and HR over a run. Compute from per-km laps returned by `get_activity_splits` (see `running-coach.mdc` § "Activity Analysis Rules" for the split-source rules). In a 60+ min steady aerobic run on flat terrain in moderate conditions, **≤5% decoupling indicates good aerobic fitness** (Friel). **>5% decoupling** in controlled conditions suggests declining aerobic fitness. Heat, humidity, and dehydration amplify drift significantly, so factor conditions (`get_activity_weather`) before drawing conclusions. The important signal is **a trend of increasing decoupling across workouts over weeks**, not a single run.
+- **Elevated resting HR.** Prefer `get_heart_rates_summary(date)` — it returns both `resting_heart_rate_bpm` and `last_7_days_avg_resting_hr` in one call, so today can be compared directly against the trailing week without looping. A resting HR **5+ bpm above the athlete's 7-day baseline for 2+ days** suggests accumulated fatigue, illness, or stress. Use `get_rhr_day(date)` for a single-day figure the summary didn't cover.
+- **Slow HR recovery post-run.** Declining recovery speed across sessions is an early overtraining marker. Not a first-class MCP metric — raise as a qualitative signal for the athlete to observe, don't try to auto-compute.
 
 ### Heart Rate Variability (HRV)
 
-- Track the 7-day HRV trend, not individual readings.
-- **Declining HRV trend** over a week or more, especially combined with elevated resting HR, is a red flag.
+Source: `get_hrv_trend(start_date, end_date)` for daily values plus a period rolling average (max 30 days; recommended 7–21). Also surfaced in `get_morning_training_readiness` (`hrv_status`, `hrv_last_night`, `hrv_baseline`) if that call is already in the turn.
+
+- Track the **7-day HRV trend**, not individual readings — single nights are too noisy.
+- **A drop of >10 ms from the 7-day baseline**, or a declining trend over a week or more, is a red flag — especially combined with elevated resting HR.
 - A single low HRV reading after a hard session is normal.
 
 ### Cadence
+
+Cadence is reported per activity (see `get_activity` and `get_activity_splits`). No dedicated trend endpoint exists — track manually across recent activities.
 
 - **Declining cadence over consecutive runs** at similar paces can signal neuromuscular fatigue.
 - A sudden drop during a run may indicate the athlete is compensating for pain or fatigue.
 
 ### Body Battery / Stress
 
+Sources: `get_body_battery(start_date, end_date)` for a range of daily body-battery curves; `get_stress_summary(date)` for a compact all-day stress figure. Body battery is also included in `get_morning_training_readiness` (`body_battery_percent`) — reuse if already fetched.
+
 - **Body battery not recovering overnight** (waking below 50 regularly) suggests insufficient recovery.
 - **Chronically elevated stress scores** affect training quality and adaptation.
 
 ### Sleep
+
+Sources: `get_sleep_summary(date)` for a single night (~350 B; sleep score, duration, stages, HRV, resting HR). Use `get_sleep_summary_range(start_date, end_date)` (up to 90 nights) for trend analysis rather than looping single-night calls.
 
 - **Sleep score trends matter more than single nights.** A week of poor sleep warrants reduced intensity.
 - Check sleep duration, deep sleep, and sleep quality before prescribing hard sessions.
 
 ### Training Status & Load
 
-- **"Unproductive" or "Detraining" status** from Garmin requires investigation — check if the athlete is in a planned recovery phase or genuinely losing fitness.
-- **Acute-to-chronic workload ratio** above 1.3 increases injury risk. Above 1.5 is a strong warning.
+Sources:
+- `get_training_load_trend(start_date, end_date)` — daily **CTL** (42-day fitness), **ATL** (7-day fatigue), **TSB** (form = CTL − ATL), and **ACWR** over up to 90 days (recommended 4–8 weeks). Also returns Garmin's own training-status phrase and code (`training_status`, `training_status_code`, `fitness_trend`, `optimal_chronic_load_min/max`).
+- `get_training_load_balance(date)` — trailing-month distribution of load across **Aerobic Low, Aerobic High, and Anaerobic** bands with `status` (below / within / above target) per band, plus Garmin's feedback phrase (e.g. `AEROBIC_HIGH_SHORTAGE`, `BALANCED`).
+- `get_training_status(date)` — Garmin's own status snapshot for a single day; useful for spot checks.
+
+- **"Unproductive" or "Detraining" status** from Garmin requires investigation — check with `get_training_load_trend` whether the athlete is in a planned recovery phase (falling ATL is expected during taper) or genuinely losing fitness (falling CTL with no plan behind it).
+- **ACWR above 1.3** increases injury risk, **above 1.5** is a strong warning. Read directly from the `acwr` field returned by `get_training_load_trend`; Garmin also provides its own `acwr_status` label.
+- **Load-focus imbalance** (`AEROBIC_HIGH_SHORTAGE`, `ANAEROBIC_SHORTAGE`, etc. from `get_training_load_balance`) — adjust the next block's session mix rather than adding volume blindly.
+
+### Running Tolerance (running-specific load model)
+
+Sources: `get_running_tolerance(date)` for a single day; `get_running_tolerance_trend(start_date, end_date, aggregation="weekly")` for the trajectory (recommended 4–12 weeks; max 90 days daily / 366 days weekly). All fields are expressed in **km** so they're directly comparable:
+- `tolerance_km` — current load capacity ceiling.
+- `acute_load_km` — intensity-adjusted load from recent runs.
+- `distance_km` — raw distance behind that load.
+- `load_ratio` (= `acute_load_km / distance_km`) — how much intensity is inflating each km's cost.
+- `feedback_phrase` — Garmin's own summary label.
+
+- **The value is in the trajectory**, not any single reading — tolerance moves slowly.
+- **`acute_load_km` approaching or exceeding `tolerance_km`** → recent load is at or beyond current capacity; back off the coming week.
+- **`load_ratio` rising steeply** → intensity is climbing faster than distance; question whether the next hard session is warranted.
+- Complements `get_training_load_trend` (which is sport-agnostic). When they disagree — e.g. TSB says "peaking" but running tolerance says "overreached" — prefer the running-specific view for running-load decisions.
+
+### Heat / Altitude Acclimation
+
+Source: `get_acclimation(date)` — `heat_acclimation_percent` (0–100, decays without continued exposure), `heat_trend` (Garmin's label, e.g. `ACCLIMATIZED`), plus previous readings so direction of travel is visible without a second call.
+
+- Not typically an injury signal — a **race-prep** signal. Included here so all "what does Garmin know about the athlete's current physiology" tools live in one place.
+- Check before a warm-weather race; low or declining `heat_acclimation_percent` heading into a hot race → recommend heat exposure sessions in the peak phase.
 
 ## Response Protocol
 
@@ -62,10 +101,10 @@ Based on severity, recommend one of:
 
 Any of these should override the training plan:
 
-- Athlete reports sharp, worsening, or localised pain
-- Resting HR elevated 10+ bpm above baseline for 3+ days
-- Training readiness below 20 for 2+ consecutive days
-- Signs of illness (elevated resting HR + poor sleep + high stress + low body battery)
+- **Athlete reports sharp, worsening, or localised pain.**
+- **Resting HR elevated 10+ bpm above baseline for 3+ days** — check `get_heart_rates_summary(date)` for today's RHR and the 7-day baseline (returned as `last_7_days_avg_resting_hr` in the same call).
+- **Training readiness below 20 for 2+ consecutive days** — check `get_morning_training_readiness(date)` per day.
+- **Signs of illness** (elevated RHR + poor sleep + high stress + low body battery). Batch the last 2–3 days from `get_heart_rates_summary`, `get_sleep_summary`, `get_stress_summary`, and `get_body_battery` before making the call.
 
 ## Complementary Training
 
