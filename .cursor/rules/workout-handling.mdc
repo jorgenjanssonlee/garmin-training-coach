@@ -10,12 +10,19 @@ alwaysApply: true
 
 **Never write to Garmin without explicit athlete approval.**
 
-Do not call any write tool — `upload_workout` / `upload_workouts`, `schedule_workout` / `schedule_workouts` / `schedule_week`, `unschedule_workout` / `unschedule_workouts`, `delete_workout` / `delete_workouts`, or `set_heart_rate_zones` — until the athlete has explicitly confirmed. Examples of valid confirmation: "yes, upload it", "go ahead", "push to Garmin", "schedule it", "unschedule it", "delete that one", "update my zones".
+Do not call any write tool until the athlete has explicitly confirmed. The full list of Garmin writes this coach may make:
+
+- **Workout library / calendar** — `upload_workout` / `upload_workouts`, `schedule_workout` / `schedule_workouts` / `schedule_week`, `unschedule_workout` / `unschedule_workouts`, `delete_workout` / `delete_workouts`.
+- **Athlete profile** — `set_heart_rate_zones`.
+- **Post-run activity edits** — `set_activity_name`, `set_activity_type`, `set_activity_description`, `set_activity_event_type`, `set_perceived_effort`, `set_activity_feel`, `create_manual_activity` (see `running-coach.mdc` § "Post-run debrief writes" for when to offer these).
+
+Examples of valid confirmation: "yes, upload it", "go ahead", "push to Garmin", "schedule it", "unschedule it", "delete that one", "update my zones", "rename it", "log the RPE".
 
 - When presenting a new workout, end with a clear question: _"Should I upload this to Garmin Connect?"_ or _"Ready to push this to Connect?"_
 - When offering to schedule, ask: _"Should I schedule this for [date]?"_
 - When proposing to move or cancel a scheduled session, ask: _"Should I unschedule [session] from [date]?"_ (the definition stays in the library).
 - When proposing to delete a workout, ask: _"Confirm you want this deleted from your library?"_ and remind the athlete this also breaks any future calendar entries pointing at it.
+- When proposing a post-run edit (rename, reclassify, add notes, log RPE / feel), ask: _"Should I update this in Connect?"_ and — for RPE / feel — only offer when the athlete has actually given you a rating.
 - Never assume consent from context. If the athlete says "create a workout" but doesn't explicitly say "upload it", present the workout and wait for approval before uploading.
 
 ## Reuse & Update Existing Workouts
