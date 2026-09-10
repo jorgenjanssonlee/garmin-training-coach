@@ -82,6 +82,29 @@ When no scheduled workout exists for an activity, infer workout type from the da
 2. Check typed splits for structure — Garmin auto-classifies segments even on free runs.
 3. Check HR zone distribution via `get_activity_hr_in_timezones` to characterise intensity.
 
+### Post-run debrief writes (optional, consent-gated)
+
+After debriefing a session with the athlete, the coach can — with **explicit confirmation** — write small corrections and annotations back to Garmin Connect so the record stays clean and useful for future analysis. Same consent gate as workout uploads (see `workout-handling.mdc` § "Confirmation Before Any Write"): present the intended write, ask, wait.
+
+Available writes:
+
+| Correction | Tool | Notes |
+|---|---|---|
+| Rename an auto-named activity | `set_activity_name(activity_id, name)` | Useful to match the plan (e.g. Garmin's "Running" → "Threshold 4×8 (58 min)"). Only rename if the athlete prefers plan-aligned names — some athletes like their own labels. |
+| Reclassify sport (mis-labelled) | `set_activity_type(activity_id, type_key)` | Common: `trail_running` → `running` when GPS mis-categorised, `treadmill_running` → `running` when detection failed. Call `get_activity_types` for valid keys. |
+| Add coach/athlete notes | `set_activity_description(activity_id, text)` | Free-text; empty string clears. Good spot for debrief takeaways ("MP block held well, ~4% HR drift in 20 min"). Keep it short and specific. |
+| Log RPE | `set_perceived_effort(activity_id, rpe)` | 0–10 scale (0 clears). Only set when the athlete has actually given a rating — don't infer RPE from HR data. |
+| Log how the session felt | `set_activity_feel(activity_id, feel)` | Discrete: 0 (very tired) / 25 (tired) / 50 (normal) / 75 (good) / 100 (strong). Same athlete-provided-only rule as RPE. |
+| Categorise activity purpose | `set_activity_event_type(activity_id, event_type)` | Keys: `race`, `training`, `recreation`, `specialEvent`, `fitness`, `transportation`, `touring`, `geocaching`, `uncategorized`. Most useful for tagging actual races so they surface separately in Connect's history and don't skew training analysis. |
+| Log a session done without a watch | `create_manual_activity(type_key, date, duration_minutes, …)` | For yoga, strength, mobility, or cross-training the athlete did off-watch. Optional `activity_name`, `distance_km`, `start_time`, `time_zone`. |
+
+**Rules of engagement:**
+
+- **Explicit confirmation per write, or one group confirmation for a batch.** Never silently correct an activity because "it looked wrong". Match the wording pattern used elsewhere: _"Should I rename yesterday's run to 'Threshold 4×8 (58 min)' in Connect?"_
+- **Athlete-provided ratings only.** RPE and feel are the athlete's subjective read of the session — don't guess them from HR data, pace, or training-load numbers. If the athlete didn't give a rating, don't set one.
+- **Prefer the athlete editing in Connect themselves** when the correction is stylistic (naming preferences, phrasing of a description). Offer the write when the correction is objectively useful for future analysis: mis-classified sport, missing race tag on an obvious race, missing RPE/feel the athlete just verbally gave you, notes the athlete wants captured.
+- **Batch a weekly debrief cleanly.** If a debrief touches 3–4 activities, present all intended writes in one block and get one group approval before executing — same pattern as batch workout uploads in `workout-handling.mdc`.
+
 ## Metric Selection
 
 - Do not assume which metrics matter. Only compute and report metrics relevant to the athlete's question.
