@@ -1,6 +1,6 @@
 # Usage Guide
 
-Once installation is complete and the MCP server shows green in Cursor settings, you're ready to start.
+Once installation is complete and the MCP server shows connected under **Customize → MCPs**, you're ready to start.
 
 ## Chat Mode
 
@@ -8,19 +8,20 @@ Always use **Agent mode** (not Ask mode) when talking to the coach. Agent mode a
 
 ## Tool Approval
 
-The first time the AI calls a Garmin tool, Cursor will show an approval prompt asking you to confirm. This is a security feature — it prevents the AI from making unauthorized external calls.
+By default, Agent asks before calling an MCP tool. Expand the arrow next to the tool name to see arguments.
 
-You have three options:
+In Cursor 3.6+, approval follows **Cursor Settings → Agents → Approvals & Execution**:
 
-- **Run** — approve this single call. You'll see the prompt again next time this tool is used.
-- **Allowlist MCP Tool** — permanently approve this specific tool. Recommended for tools the coach uses frequently (activity data, health metrics, etc.).
-- **Skip** — decline the call.
+- **Auto-review** (default) — allowlisted MCP tools run immediately; others go through a safety classifier (you may still be asked to confirm).
+- **Allowlist** — older behaviour: only tools you have allowlisted run without a prompt.
 
-Since the coach calls Garmin tools frequently, it's easiest to click **Allowlist MCP Tool** each time a new tool comes up. After a few sessions most tools will be allowlisted and you won't see the prompt anymore.
+When prompted, approve the call (and add it to the allowlist when offered) for tools the coach uses often — activity data, health metrics, workouts. After a few sessions most of those are pre-approved.
+
+You can also enable or disable individual tools from the tools list at the top of the chat panel (**Available Tools**).
 
 ## Refresh MCP or re-authenticate
 
-Upstream **[Taxuspt/garmin_mcp](https://github.com/Taxuspt/garmin_mcp)** updates often (new tools, auth changes). **`uv` caches** the Git install used by Cursor — refresh it from a terminal, then **toggle the `garmin` MCP off and on** in **Cursor > Settings > Cursor Settings > Tools & MCP** (or **Developer: Reload Window**) so Cursor runs the new build.
+Upstream **[Taxuspt/garmin_mcp](https://github.com/Taxuspt/garmin_mcp)** updates often (new tools, auth changes). **`uv` caches** the Git install used by Cursor — refresh it from a terminal, then **toggle the `garmin` MCP off and on** under **Customize → MCPs** (or **Developer: Reload Window**) so Cursor runs the new build. If status or tool count doesn't update, restart Cursor.
 
 If **`uvx --python 3.12 --from git+https://github.com/Taxuspt/garmin_mcp garmin-mcp-auth --verify`** fails after an upstream auth change, run **`--force-reauth`** with the same **`uvx --from git+…`** pattern, then **`--verify`** again. Do **not** use **`uv run garmin-mcp-auth`** from this repo alone—it expects a local `garmin_mcp` Python project.
 
@@ -74,7 +75,7 @@ For maximum context savings, `GARMIN_ENABLED_TOOLS` gives you an explicit allowl
 
 ### After changing the env block
 
-Toggle the `garmin` MCP off and on in **Cursor > Settings > Cursor Settings > Tools & MCP** (or run **Developer: Reload Window**) so Cursor restarts the server with the new environment. The tool count in the MCP panel updates immediately — that's how you confirm the filter took effect. If you see `unknown filter names` warnings on the MCP server's stderr, they list tool names that didn't match anything (usually a typo — the tool got renamed upstream, or you added an extra space).
+Toggle the `garmin` MCP off and on under **Customize → MCPs** (or run **Developer: Reload Window**) so Cursor restarts the server with the new environment. The tool count under **MCPs** updates when the filter takes effect — that's how you confirm it worked. If it doesn't update, restart Cursor. If you see `unknown filter names` warnings on the MCP server's stderr (or in **MCP Logs**), they list tool names that didn't match anything (usually a typo — the tool got renamed upstream, or you added an extra space).
 
 ## Getting Started — Athlete Profile Setup
 

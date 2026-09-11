@@ -107,9 +107,9 @@ To force re-auth when tokens expire: `uvx --python 3.12 --from git+https://githu
 ### 4. Verify MCP server in Cursor
 
 1. Open the `garmin-training-coach` folder as a workspace (File > Open Folder)
-2. Go to **Cursor > Settings > Cursor Settings > Tools & MCP**
-3. `garmin` should appear. Toggle to **enabled**. Green = running.
-4. If red, verify tokens with the full `uvx` line in **Garmin MCP: upstream updates & authentication** below.
+2. Open **Customize** in the sidebar → **MCPs**
+3. `garmin` should appear. Toggle it **on**. Connected (green, if shown) = running.
+4. If it fails to connect, verify tokens with the full `uvx` line in **Garmin MCP: upstream updates & authentication** below. For logs: Output panel → **MCP Logs** (Cmd+Shift+U on Mac).
 
 Windows
 
@@ -163,9 +163,9 @@ To force re-auth when tokens expire: `uvx --python 3.12 --from git+https://githu
 ### 4. Verify MCP server in Cursor
 
 1. Open the `garmin-training-coach` folder as a workspace (File > Open Folder)
-2. Go to **File > Preferences > Cursor Settings > Tools & MCP** (or open Settings and search for "MCP")
-3. `garmin` should appear. Toggle to **enabled**. Green = running.
-4. If red, verify tokens with the full `uvx` line in **Garmin MCP: upstream updates & authentication** below.
+2. Open **Customize** in the sidebar → **MCPs**
+3. `garmin` should appear. Toggle it **on**. Connected (green, if shown) = running.
+4. If it fails to connect, verify tokens with the full `uvx` line in **Garmin MCP: upstream updates & authentication** below. For logs: Output panel → **MCP Logs** (Ctrl+Shift+U on Windows).
 
 ## Garmin MCP: upstream updates & authentication
 
@@ -183,7 +183,7 @@ uvx --refresh --python 3.12 --from git+https://github.com/Taxuspt/garmin_mcp gar
 
 ### Make Cursor use the new build
 
-After refreshing: **Cursor > Settings > Cursor Settings > Tools & MCP** → turn **garmin** **Off**, then **On**. Or **Developer: Reload Window** from the Command Palette. That restarts the MCP process so it picks up the refreshed install. A full Cursor quit is optional.
+After refreshing: open **Customize → MCPs**, toggle **garmin** off then on. Or run **Developer: Reload Window** from the Command Palette. That restarts the MCP process so it picks up the refreshed install. If status or tool count doesn't update, restart Cursor.
 
 ### Authentication changes & re-login
 
@@ -199,7 +199,7 @@ Then:
 uvx --python 3.12 --from git+https://github.com/Taxuspt/garmin_mcp garmin-mcp-auth --verify
 ```
 
-Toggle **garmin** off/on in MCP settings again.
+Toggle **garmin** off/on under **Customize → MCPs** again.
 
 ## Next Steps
 
@@ -218,9 +218,9 @@ See **[Available MCP Tools (Taxuspt/garmin_mcp — tool coverage)](https://githu
 
 | Problem                                        | Solution                                                                                                                                                                                                                |
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| MCP server shows red in Cursor settings        | `uvx --python 3.12 --from git+https://github.com/Taxuspt/garmin_mcp garmin-mcp-auth --verify` — if invalid, `--force-reauth`, then toggle **garmin** MCP off/on (see **Garmin MCP: upstream updates & authentication**) |
+| MCP server disconnected / red under **Customize → MCPs** | `uvx --python 3.12 --from git+https://github.com/Taxuspt/garmin_mcp garmin-mcp-auth --verify` — if invalid, `--force-reauth`, then toggle **garmin** off/on under **Customize → MCPs** (see **Garmin MCP: upstream updates & authentication**). Check **MCP Logs** in the Output panel. |
 | `uvx` command not found                        | macOS: `brew install uv`. Windows: `winget install astral-sh.uv` or `pip install uv`. Restart Cursor after installing.                                                                                                  |
-| MCP tools not appearing in agent chat          | Make sure you opened this folder as the Cursor workspace. MCP config is project-level.                                                                                                                                  |
-| Want latest upstream `garmin_mcp` after merges | `uvx --refresh --python 3.12 --from git+https://github.com/Taxuspt/garmin_mcp garmin-mcp --help`, then toggle **garmin** MCP off/on                                                                                     |
-| Tokens expired                                 | Same as red MCP: `uvx … garmin-mcp-auth --force-reauth`                                                                                                                                                                 |
+| MCP tools not appearing in agent chat          | Make sure you opened this folder as the Cursor workspace. MCP config is project-level. Confirm `garmin` is toggled on under **Customize → MCPs**.                                                                      |
+| Want latest upstream `garmin_mcp` after merges | `uvx --refresh --python 3.12 --from git+https://github.com/Taxuspt/garmin_mcp garmin-mcp --help`, then toggle **garmin** off/on under **Customize → MCPs**                                                             |
+| Tokens expired                                 | Same as disconnected MCP: `uvx … garmin-mcp-auth --force-reauth`                                                                                                                                                       |
 | Garmin MFA required                            | Run `uvx … garmin-mcp-auth` (or `--force-reauth`) in an interactive terminal                                                                                                                                            |
