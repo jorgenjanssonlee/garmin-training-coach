@@ -2,7 +2,7 @@
 description: Athlete profile - personal goals, training preferences, and coaching philosophy
 globs:
 alwaysApply: true
-template_version: 2026-09-10
+template_version: 2026-09-23
 ---
 
 <!--
@@ -26,6 +26,7 @@ Merging upstream template updates into an already-customised live file:
 
 > **Template changelog** (most recent first — full history via `git log docs/athlete-profile.template.md`):
 >
+> - **2026-09-23** — Onboarding shortcut updated: Connect race goal times now come through `get_calendar_events` as `goal_time_seconds` (confirm rather than always ask from scratch). Full enrichment rules live in `training-plans.mdc`.
 > - **2026-09-10** — Race Calendar section retagged `AUTO + YOU` with `get_calendar_events` as the primary race source (full precedence rules live in `training-plans.mdc`). HR Zones section reduced to a snapshot-only view with a pointer to the operational refresh rules. Behaviour-rule duplication (tool priority lists, precedence blocks, Max HR handling) moved out to the rule files — this file now owns state + user-facing context only. Onboarding shortcut tip added for auto-populating races from Connect.
 
 This file stores your personal goals, preferences, and physical parameters. The AI coach uses it as context for every conversation.
@@ -75,7 +76,7 @@ These are training races, tune-ups, or lower-priority events. The AI will fit th
 
 > **Tip:** Goals and races are separate in Garmin Connect. `get_goals` returns only goals (distance targets, etc.), never race events — those come from `get_calendar_events`. Add races in Connect (Training → Calendar → Add event) when you can; that keeps them in one place and lets your watch use them too. Only use this file when Connect doesn't have the race or you want to override how the AI treats it.
 
-> **Onboarding shortcut:** You don't have to fill this section in by hand. Ask the coach to _"pull my upcoming races from Garmin and populate my Race Calendar"_ and it will read `get_calendar_events`, auto-fill what Connect knows (name, date, distance, priority), and only ask you for what's missing — typically your **goal / target finish time** (currently not exposed by the MCP tool even if you set it in Connect) and any priority reclassification. It will show you the merged draft before writing.
+> **Onboarding shortcut:** You don't have to fill this section in by hand. Ask the coach to _"pull my upcoming races from Garmin and populate my Race Calendar"_ and it will read `get_calendar_events`, auto-fill what Connect knows (name, date, distance, goal time when set in Connect, priority), confirm the Connect goal time when present (_"Connect has 55:00 — keep?"_), and only ask you for gaps (missing goal time, priority reclassification, notes). It will show you the merged draft before writing.
 
 ## Training Availability `AUTO` + `YOU`
 

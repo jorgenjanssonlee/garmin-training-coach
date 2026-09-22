@@ -40,13 +40,13 @@ The AI determines the current training block phase automatically. Do not ask the
 
 1. **Garmin Connect calendar events** — call `get_calendar_events(start_date, end_date)` with a wide forward window (e.g. today → today + 12 months) to pull planned races and events the athlete added or subscribed to in Connect. This is the **only** tool that returns Connect calendar races; `get_scheduled_workouts` returns only workouts and `get_goals` returns only goals. Each event includes:
    - `is_race` (true → treat as a race, not a general event) and `primary_event` (true → the goal race for the athlete's active training plan; treat as the **A race** by default).
-   - `distance_meters` when the organiser stored one (use to infer race distance / category).
+   - `distance_meters` when the organiser stored one (already converted to meters; use to infer race distance / category).
+   - `goal_time_seconds` when the athlete set a finish-time goal on the event in Connect (`null` when unset, unavailable, or not a time goal). Format for the athlete as `H:MM:SS` / `M:SS` (e.g. `3300` → `55:00`).
    - `start_time_local` and `time_zone` (use for taper timing on race day).
-   - **Not returned:** the athlete's **goal / target finish time**, even when set in Connect. The upstream tool exposes distance targets but silently drops time targets. Always sourced from `athlete-profile.mdc` or by asking the athlete.
 2. **Race Calendar in `athlete-profile.mdc`** — override and fallback layer. Use it when:
    - A race is not in Garmin Connect (e.g. local event without a Connect listing).
    - The athlete wants to override the Connect data: reclassify A/B/C priority, set a different goal time, add notes, or demote `primary_event` for coaching purposes.
-   - If a race appears in **both** sources, the athlete profile takes precedence for **priority (A/B/C), goal time, and notes**; the Connect entry supplies date, distance, and start time unless the profile overrides those too.
+   - If a race appears in **both** sources, the athlete profile takes precedence for **priority (A/B/C), goal time, and notes**; the Connect entry supplies date, distance, start time, and Connect goal time unless the profile overrides those too.
 3. **Garmin Connect goals** — call `get_goals(goal_type="active")` and `get_goals(goal_type="future")` for goals in progress (e.g. yearly distance targets, cumulative-distance goals). These are **not** race events — use them for context (e.g. seasonal volume ambitions), not to drive periodisation.
 4. **Athlete instructions in chat** — the athlete can override phase durations or the current phase at any time (e.g., "I want a 6-week peak phase with only 2 weeks taper"). Chat overrides take priority over defaults for the current planning cycle.
 
@@ -56,9 +56,9 @@ If neither Connect calendar events nor the athlete profile contain race data, de
 
 Don't ask the athlete to fill in a race calendar from scratch when Connect already has the race. When a race exists in `get_calendar_events` but is missing or thin in the athlete profile, **offer to enrich the profile with Connect data + ask only for the gaps**.
 
-1. **Auto-fill from Connect:** race name (`title`), date, distance (`distance_meters` → km/mi in the athlete's units), start time (`start_time_local`), location, and default priority (**A** if `primary_event: true`, otherwise leave unset).
-2. **Ask the athlete only for what Connect doesn't provide:**
-   - **Goal / target finish time** — always missing from `get_calendar_events` (see data-source note above).
+1. **Auto-fill from Connect:** race name (`title`), date, distance (`distance_meters` → km/mi in the athlete's units), start time (`start_time_local`), location, goal time when `goal_time_seconds` is present (format as `H:MM:SS` / `M:SS`), and default priority (**A** if `primary_event: true`, otherwise leave unset).
+2. **Confirm or ask only for gaps:**
+   - **Goal / target finish time** — if `goal_time_seconds` is present, propose it and ask to keep or override (e.g. _"Connect has 55:00 — keep?"_). If `null` / missing, ask the athlete (or leave blank).
    - **Priority (A/B/C)** — confirm the auto-assigned A, or reclassify (e.g. Connect's `primary_event` is really a tune-up).
    - **Notes / context** — optional (course profile, race strategy, weather concerns).
 3. **Present the merged draft for approval** before writing to `athlete-profile.mdc`. Use the same explicit-consent pattern as workout uploads: show the block, ask _"Add this to your Race Calendar?"_, wait for confirmation.
