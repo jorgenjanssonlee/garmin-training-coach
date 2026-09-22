@@ -29,7 +29,7 @@ See **README → [Garmin MCP: upstream updates & authentication](README.md)** (s
 
 ## Reduce MCP context size (optional)
 
-The Garmin MCP registers **150 tools** by default. Every one of those adds to the tool inventory the AI has to carry in context each turn, even when it never calls them. If you don't use Garmin's nutrition logging, gamification badges, or women's-health features, you can shrink the surface to just what this coach actually touches.
+The Garmin MCP registers **151 tools** by default. Every one of those adds to the tool inventory the AI has to carry in context each turn, even when it never calls them. If you don't use Garmin's nutrition logging, gamification badges, or women's-health features, you can shrink the surface to just what this coach actually touches.
 
 Two env vars in the `garmin` MCP block of `.cursor/mcp.json` control it:
 
@@ -67,7 +67,7 @@ That removes:
 - **3 women's health tools** — pregnancy and menstrual data (remove from the list if applicable to you).
 - **3 manual health-data writes** — body composition, blood pressure, hydration entries.
 
-Leaves ~123 tools registered. Add or remove entries to match your setup — e.g. keep `add_body_composition` if you use it, drop `get_courses` / `download_course_gpx` / `upload_course` / `delete_course` if you don't build GPS routes, drop the 3 gear tools (`get_gear`, `get_gear_stats`, `get_gear_activities`) if you don't rotate shoes.
+Leaves ~124 tools registered. Add or remove entries to match your setup — e.g. keep `add_body_composition` if you use it, drop `get_courses` / `download_course_gpx` / `upload_course` / `delete_course` if you don't build GPS routes, drop the 3 gear tools (`get_gear`, `get_gear_stats`, `get_gear_activities`) if you don't rotate shoes.
 
 ### Alternative: allowlist just the tools the coach uses
 

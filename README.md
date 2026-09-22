@@ -6,7 +6,7 @@ An AI-powered running training coach that connects Cursor's AI agent to your Gar
 
 This project started as a [ChatGPT Custom GPT pulling data from Strava](https://github.com/jorgenjanssonlee/ChatGPT-Running-coach-from-Strava-data). It worked, but had limitations that eventually pushed me to Cursor:
 
-- **Better data** - Strava doesn't expose the health and wellness metrics Garmin collects (sleep, HRV, stress, body battery, training readiness). Cursor + MCP pulls directly from Garmin Connect (150 tools) and gets the full picture.
+- **Better data** - Strava doesn't expose the health and wellness metrics Garmin collects (sleep, HRV, stress, body battery, training readiness). Cursor + MCP pulls directly from Garmin Connect (151 tools) and gets the full picture.
 - **Direct Garmin interaction** - ChatGPT Custom GPTs couldn't talk to Garmin at all. Creating workouts meant copy-pasting from the chat into Connect's workout builder. Now the AI creates and schedules workouts on the device.
 - **Model choice** - Cursor supports multiple LLM providers (Claude, GPT-4, Gemini, etc.), not just ChatGPT.
 - **Persistent coaching rules** - Cursor Rules give the AI consistent coaching behavior across conversations, similar to GPT Instructions but with more flexibility.
@@ -19,13 +19,13 @@ This project started as a [ChatGPT Custom GPT pulling data from Strava](https://
 
 This project would not be possible without:
 
-- **[Taxuspt/garmin_mcp](https://github.com/Taxuspt/garmin_mcp)** -- The Garmin Connect MCP server that makes this entire project work. Exposes 150 tools plus 5 workout-template resources across 17 modules. Without this, there is no AI coaching.
+- **[Taxuspt/garmin_mcp](https://github.com/Taxuspt/garmin_mcp)** -- The Garmin Connect MCP server that makes this entire project work. Exposes 151 tools plus 5 workout-template resources across 17 modules. Without this, there is no AI coaching.
 - **[cyberjunky/python-garminconnect](https://github.com/cyberjunky/python-garminconnect)** -- The Python library that `garmin_mcp` is built on. Provides the underlying Garmin Connect API client.
 - **[AI-Powered Triathlon Coaching](https://dzone.com/articles/ai-powered-triathlon-coaching-claude-garmin)** (DZone, 2025) -- The article that inspired this project.
 
 ## How It Works
 
-A single MCP server ([Taxuspt/garmin_mcp](https://github.com/Taxuspt/garmin_mcp)) bridges Cursor to Garmin Connect, providing 150 tools covering activities, health metrics, workouts, training performance, gear, nutrition, and more.
+A single MCP server ([Taxuspt/garmin_mcp](https://github.com/Taxuspt/garmin_mcp)) bridges Cursor to Garmin Connect, providing 151 tools covering activities, health metrics, workouts, training performance, gear, nutrition, and more.
 
 Cursor Rules provide persistent coaching instructions so the AI agent behaves as an experienced running coach across every conversation.
 
